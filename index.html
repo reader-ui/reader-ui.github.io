@@ -801,14 +801,29 @@
   // ============ Parse chapters ============
   function parseChapters(text) {
     chapters = [];
-    // Match lines starting with 第...章 (Chinese chapter markers)
-    // Supports: 第一章, 第二十三章, 第1章, 第123章, etc.
-    const chapterRegex = /^(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm;
+    // Match chapter heading lines:
+    //   第一章 ..., 第二十三章 ..., 第1章 ...  (Chinese style)
+    //   1. ..., 2. ..., 123. ...               (Numbered style)
+    const chapterRegex = /^(第[零一二三四五六七八九十百千万0-9]+章[^\n]*|(\d+)\.\s+[^\n]*)/gm;
     let match;
     const splits = [];
 
     while ((match = chapterRegex.exec(text)) !== null) {
       splits.push({ title: match[1].trim(), index: match.index });
+    }
+
+    // For numbered format (1. 2. 3.), verify they form a sequential series
+    // starting from 1 to avoid false positives on random numbered lines
+    if (splits.length > 0 && !(/^第/.test(splits[0].title))) {
+      const numbered = splits.every(function (s) { return /^\d+\.\s/.test(s.title); });
+      if (numbered) {
+        const firstNum = parseInt(splits[0].title, 10);
+        if (firstNum !== 1) {
+          // Doesn't start from 1 — likely not real chapters
+          chapters = [{ title: currentBook.name.replace(/\.txt$/i, ''), content: text.trim() }];
+          return;
+        }
+      }
     }
 
     if (splits.length === 0) {
