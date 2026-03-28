@@ -483,6 +483,43 @@
 
   .retry-btn:hover { background: var(--accent); color: #fff; }
 
+  /* Local file picker */
+  .local-upload {
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    max-width: 900px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .local-upload-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 32px 20px;
+    cursor: pointer;
+    transition: all var(--transition);
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--chapter-hover);
+    color: var(--accent);
+  }
+
+  .drop-zone input[type="file"] {
+    display: none;
+  }
+
   /* Sidebar overlay for mobile */
   .sidebar-overlay {
     display: none;
@@ -541,6 +578,13 @@
   <h1>Book Reader</h1>
   <p>Select a book to start reading</p>
   <div class="book-grid" id="book-grid"></div>
+  <div class="local-upload">
+    <span class="local-upload-label">Or load .txt files from your device</span>
+    <div class="drop-zone" id="drop-zone">
+      Drop .txt files here or click to browse
+      <input type="file" id="file-input" accept=".txt" multiple>
+    </div>
+  </div>
 </div>
 
 <!-- Reader -->
@@ -723,11 +767,20 @@
     return null;
   }
 
+  // ============ Text normalization ============
+  function normalizeText(text) {
+    // Strip BOM and normalize line endings to \n
+    return text.replace(/\uFEFF/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  }
+
   // ============ Load book list ============
   async function loadBooks() {
     const info = getRepoInfo();
+
+    // Not on GitHub Pages — go straight to welcome with local file picker
     if (!info) {
-      showError('Cannot detect repository info from URL. Please deploy to GitHub Pages.');
+      $loading.style.display = 'none';
+      $welcome.style.display = '';
       return;
     }
 
@@ -736,21 +789,20 @@
       let data = await fetchBookList(info, 'main');
       if (!data) data = await fetchBookList(info, 'master');
       if (!data) {
-        showError('Could not find the "books" folder. Make sure a folder named <b>books</b> exists in your repository with .txt files.');
+        // No books folder on remote — still show welcome for local file upload
+        $loading.style.display = 'none';
+        $welcome.style.display = '';
         return;
       }
 
       books = data.filter(f => f.name.endsWith('.txt'));
-      if (books.length === 0) {
-        showError('No .txt files found in the <b>books</b> folder. Add some books and reload.');
-        return;
-      }
-
       renderBookGrid();
       $loading.style.display = 'none';
       $welcome.style.display = '';
     } catch (e) {
-      showError('Failed to load books: ' + e.message);
+      // Network error — still show welcome for local file upload
+      $loading.style.display = 'none';
+      $welcome.style.display = '';
     }
   }
 
@@ -761,27 +813,8 @@
     return res.json();
   }
 
-  function showError(msg) {
-    $loading.innerHTML =
-      '<div class="error-msg">' + msg + '</div>' +
-      '<button class="retry-btn" onclick="location.reload()">Retry</button>';
-  }
-
   // ============ Render book grid ============
-  function renderBookGrid() {
-    $bookGrid.innerHTML = '';
-    books.forEach(function (book) {
-      const card = document.createElement('div');
-      card.className = 'book-card';
-      const name = book.name.replace(/\.txt$/i, '');
-      card.innerHTML =
-        '<span class="book-icon">&#128218;</span>' +
-        '<div class="book-title">' + escapeHtml(name) + '</div>' +
-        '<div class="book-ext">TXT</div>';
-      card.addEventListener('click', function () { openBook(book); });
-      $bookGrid.appendChild(card);
-    });
-  }
+  // (defined below, after local file logic)
 
   // ============ Open a book ============
   async function openBook(book) {
@@ -795,9 +828,16 @@
     $chapterNoResults.classList.remove('visible');
 
     try {
-      const res = await fetch(book.download_url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
+      var text;
+      if (book._localText) {
+        // Local file — text already loaded
+        text = book._localText;
+      } else {
+        var res = await fetch(book.download_url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        text = await res.text();
+      }
+      text = normalizeText(text);
       currentBook = book;
       parseChapters(text);
       renderChapterList();
@@ -997,6 +1037,102 @@
     var d = document.createElement('div');
     d.textContent = s;
     return d.innerHTML;
+  }
+
+  // ============ Local file loading ============
+  var $dropZone = document.getElementById('drop-zone');
+  var $fileInput = document.getElementById('file-input');
+
+  function handleLocalFiles(fileList) {
+    var txtFiles = [];
+    for (var i = 0; i < fileList.length; i++) {
+      if (fileList[i].name.toLowerCase().endsWith('.txt')) {
+        txtFiles.push(fileList[i]);
+      }
+    }
+    if (txtFiles.length === 0) return;
+
+    // If exactly one file, open it directly
+    if (txtFiles.length === 1) {
+      loadLocalFile(txtFiles[0]);
+      return;
+    }
+
+    // Multiple files — add them to the book grid
+    txtFiles.forEach(function (file) {
+      var book = { name: file.name, _localText: null, _file: file };
+      books.push(book);
+    });
+    renderBookGrid();
+  }
+
+  function loadLocalFile(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var book = { name: file.name, _localText: normalizeText(e.target.result) };
+      currentBook = book;
+      $welcome.style.display = 'none';
+      $reader.classList.add('active');
+      $sidebarName.textContent = file.name.replace(/\.txt$/i, '');
+      $chapterBar.textContent = '';
+      $chapterList.innerHTML = '';
+      $chapterSearch.value = '';
+      $chapterNoResults.classList.remove('visible');
+      parseChapters(book._localText);
+      renderChapterList();
+      goToChapter(0);
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  $dropZone.addEventListener('click', function () { $fileInput.click(); });
+
+  $fileInput.addEventListener('change', function () {
+    if (this.files.length > 0) handleLocalFiles(this.files);
+    this.value = '';
+  });
+
+  $dropZone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    this.classList.add('drag-over');
+  });
+
+  $dropZone.addEventListener('dragleave', function () {
+    this.classList.remove('drag-over');
+  });
+
+  $dropZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    handleLocalFiles(e.dataTransfer.files);
+  });
+
+  function renderBookGrid() {
+    $bookGrid.innerHTML = '';
+    books.forEach(function (book) {
+      var card = document.createElement('div');
+      card.className = 'book-card';
+      var name = book.name.replace(/\.txt$/i, '');
+      card.innerHTML =
+        '<span class="book-icon">&#128218;</span>' +
+        '<div class="book-title">' + escapeHtml(name) + '</div>' +
+        '<div class="book-ext">TXT</div>';
+      card.addEventListener('click', function () {
+        if (book._file && !book._localText) {
+          // Local file not yet read — read it first
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            book._localText = normalizeText(ev.target.result);
+            book.download_url = null;
+            openBook(book);
+          };
+          reader.readAsText(book._file, 'UTF-8');
+        } else {
+          openBook(book);
+        }
+      });
+      $bookGrid.appendChild(card);
+    });
   }
 
   // ============ Init ============
