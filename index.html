@@ -858,42 +858,46 @@
     return results;
   }
 
-  // Validate numbered chapter candidates (1. 2. 3. ...)
-  // Returns the candidates if they look like real chapters, otherwise []
-  function validateNumberedSplits(text, candidates) {
+  // Extract real chapters from numbered candidates.
+  // Books often have in-text numbered lists (game rules, rankings, etc.)
+  // that also match "N.text". This function picks the longest strictly-ascending
+  // chain starting from 1, keeping only the FIRST occurrence of each number
+  // and requiring a minimum character gap between consecutive chapters.
+  function extractNumberedChapters(text, candidates) {
     if (candidates.length < 2) return [];
 
-    // Extract the leading number from each candidate
-    var nums = candidates.map(function (c) { return parseInt(c.title, 10); });
+    // Build the chain: walk through candidates in file order,
+    // pick those whose number equals expectedNext.
+    // On duplicate numbers, keep the first (real chapter) and skip later ones
+    // (in-text lists always come AFTER the chapter heading).
+    var chain = [];
+    var expectedNext = 1;
+    var MIN_GAP = 100; // minimum chars between real chapters
 
-    // Must start at 1
-    if (nums[0] !== 1) return [];
+    for (var i = 0; i < candidates.length; i++) {
+      var num = parseInt(candidates[i].title, 10);
+      if (isNaN(num)) continue;
 
-    // Numbers must be strictly ascending
-    for (var i = 1; i < nums.length; i++) {
-      if (nums[i] <= nums[i - 1]) return [];
+      // Skip lines that are too long (likely paragraphs, not headings)
+      if (candidates[i].title.length > 100) continue;
+
+      if (num === expectedNext || (num > expectedNext && num <= expectedNext + 20)) {
+        // Accept exact next or small gaps (authors sometimes skip numbers)
+        // Verify gap from previous chapter — real chapters are spaced apart
+        if (chain.length > 0) {
+          var gap = candidates[i].index - chain[chain.length - 1].index;
+          if (gap < MIN_GAP) continue; // too close — likely an in-text list
+        }
+        chain.push(candidates[i]);
+        expectedNext = num + 1;
+      }
+      // else: number too far ahead or behind — skip (in-text list item)
     }
 
-    // Lines should be short (chapter headings, not paragraphs) — max 80 chars
-    var allShort = candidates.every(function (c) { return c.title.length <= 80; });
-    if (!allShort) return [];
+    // Need a reasonable number of chapters to be confident
+    if (chain.length < 3) return [];
 
-    // Candidates should be spread out, not clustered on consecutive lines
-    // (consecutive numbered lines = a list, not chapters)
-    // Use character offsets directly — no expensive per-candidate text slicing
-    // Sample up to 50 evenly-spaced pairs to keep this O(1) for huge files
-    var step = Math.max(1, Math.floor(candidates.length / 50));
-    var sampledClose = 0, sampledTotal = 0;
-    for (var j = step; j < candidates.length; j += step) {
-      sampledTotal++;
-      // Check characters between this candidate and the previous sampled one
-      // If gap is very small (< 3 newlines worth ~ roughly < 10 chars), suspicious
-      var charGap = candidates[j].index - candidates[j - step].index;
-      if (charGap < 20 * step) sampledClose++;
-    }
-    if (sampledTotal > 0 && sampledClose > sampledTotal * 0.5) return [];
-
-    return candidates;
+    return chain;
   }
 
   function parseChapters(text) {
@@ -911,7 +915,7 @@
       var candidates = collectMatches(text, /^(\d+[.\u3001\uff0e][^\n]*)/gm);
       // Trim trailing whitespace from titles so bare "1. " becomes "1."
       candidates.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
-      splits = validateNumberedSplits(text, candidates);
+      splits = extractNumberedChapters(text, candidates);
     }
 
     // --- Strategy 3: "Chapter N" style (English) ---
