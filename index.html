@@ -640,46 +640,55 @@
   $overlay.addEventListener('click', closeSidebar);
 
   // ============ Chapter search ============
+  var searchTimer = null;
+
   function filterChapters(query) {
     query = query.trim();
     $chapterSearchClear.classList.toggle('visible', query.length > 0);
-    const items = $chapterList.querySelectorAll('.chapter-item');
-    let visibleCount = 0;
 
-    items.forEach(function (el, i) {
-      const title = chapters[i].title;
-      if (!query) {
-        el.classList.remove('hidden');
-        el.innerHTML = escapeHtml(title);
-        visibleCount++;
+    // For large chapter lists, rebuild only the matching items instead of
+    // toggling visibility on 1000+ DOM nodes
+    var qLower = query.toLowerCase();
+    var frag = document.createDocumentFragment();
+    var visibleCount = 0;
+
+    for (var i = 0; i < chapters.length; i++) {
+      var title = chapters[i].title;
+      if (query && !title.toLowerCase().includes(qLower)) continue;
+
+      var el = document.createElement('div');
+      el.className = 'chapter-item' + (i === currentChapterIndex ? ' active' : '');
+      el.setAttribute('data-idx', i);
+
+      if (query) {
+        var lower = title.toLowerCase();
+        var matchIdx = lower.indexOf(qLower);
+        el.innerHTML =
+          escapeHtml(title.slice(0, matchIdx)) +
+          '<span class="highlight">' + escapeHtml(title.slice(matchIdx, matchIdx + query.length)) + '</span>' +
+          escapeHtml(title.slice(matchIdx + query.length));
       } else {
-        const lower = title.toLowerCase();
-        const qLower = query.toLowerCase();
-        if (lower.includes(qLower)) {
-          el.classList.remove('hidden');
-          // Highlight matched text
-          const idx = lower.indexOf(qLower);
-          el.innerHTML =
-            escapeHtml(title.slice(0, idx)) +
-            '<span class="highlight">' + escapeHtml(title.slice(idx, idx + query.length)) + '</span>' +
-            escapeHtml(title.slice(idx + query.length));
-          visibleCount++;
-        } else {
-          el.classList.add('hidden');
-          el.innerHTML = escapeHtml(title);
-        }
+        el.textContent = title;
       }
-    });
+      frag.appendChild(el);
+      visibleCount++;
+    }
 
+    $chapterList.innerHTML = '';
+    $chapterList.appendChild(frag);
     $chapterNoResults.classList.toggle('visible', visibleCount === 0 && query.length > 0);
   }
 
+  // Debounced search — avoids lag on large chapter lists
   $chapterSearch.addEventListener('input', function () {
-    filterChapters(this.value);
+    var val = this.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () { filterChapters(val); }, 120);
   });
 
   $chapterSearchClear.addEventListener('click', function () {
     $chapterSearch.value = '';
+    clearTimeout(searchTimer);
     filterChapters('');
     $chapterSearch.focus();
   });
@@ -830,18 +839,19 @@
     if (!allShort) return [];
 
     // Candidates should be spread out, not clustered on consecutive lines
-    // (consecutive numbered lines = a list inside a paragraph, not chapters)
-    var lines = text.split('\n');
-    var lineNums = candidates.map(function (c) {
-      return text.slice(0, c.index).split('\n').length;
-    });
-    var consecutiveCount = 0;
-    for (var j = 1; j < lineNums.length; j++) {
-      // If two "chapter" headings are within 2 lines of each other, suspicious
-      if (lineNums[j] - lineNums[j - 1] <= 2) consecutiveCount++;
+    // (consecutive numbered lines = a list, not chapters)
+    // Use character offsets directly — no expensive per-candidate text slicing
+    // Sample up to 50 evenly-spaced pairs to keep this O(1) for huge files
+    var step = Math.max(1, Math.floor(candidates.length / 50));
+    var sampledClose = 0, sampledTotal = 0;
+    for (var j = step; j < candidates.length; j += step) {
+      sampledTotal++;
+      // Check characters between this candidate and the previous sampled one
+      // If gap is very small (< 3 newlines worth ~ roughly < 10 chars), suspicious
+      var charGap = candidates[j].index - candidates[j - step].index;
+      if (charGap < 20 * step) sampledClose++;
     }
-    // If more than half are clustered, it's probably a list, not chapters
-    if (consecutiveCount > lineNums.length * 0.5) return [];
+    if (sampledTotal > 0 && sampledClose > sampledTotal * 0.5) return [];
 
     return candidates;
   }
@@ -894,18 +904,28 @@
 
   // ============ Render chapter list ============
   function renderChapterList() {
-    $chapterList.innerHTML = '';
-    chapters.forEach(function (ch, idx) {
-      const el = document.createElement('div');
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < chapters.length; i++) {
+      var el = document.createElement('div');
       el.className = 'chapter-item';
-      el.textContent = ch.title;
-      el.addEventListener('click', function () {
-        goToChapter(idx);
-        closeSidebar();
-      });
-      $chapterList.appendChild(el);
-    });
+      el.textContent = chapters[i].title;
+      el.setAttribute('data-idx', i);
+      frag.appendChild(el);
+    }
+    $chapterList.innerHTML = '';
+    $chapterList.appendChild(frag);
   }
+
+  // Event delegation — single listener handles all chapter clicks
+  $chapterList.addEventListener('click', function (e) {
+    var item = e.target.closest('.chapter-item');
+    if (!item) return;
+    var idx = parseInt(item.getAttribute('data-idx'), 10);
+    if (!isNaN(idx)) {
+      goToChapter(idx);
+      closeSidebar();
+    }
+  });
 
   // ============ Navigate chapters ============
   function goToChapter(idx) {
@@ -913,13 +933,14 @@
     currentChapterIndex = idx;
     const ch = chapters[idx];
 
-    // Highlight sidebar
-    const items = $chapterList.querySelectorAll('.chapter-item');
-    items.forEach(function (el, i) {
-      el.classList.toggle('active', i === idx);
-    });
-    // Scroll sidebar to active item
-    if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+    // Highlight sidebar — use data-idx to find active item efficiently
+    var prev = $chapterList.querySelector('.chapter-item.active');
+    if (prev) prev.classList.remove('active');
+    var cur = $chapterList.querySelector('.chapter-item[data-idx="' + idx + '"]');
+    if (cur) {
+      cur.classList.add('active');
+      cur.scrollIntoView({ block: 'nearest' });
+    }
 
     // Render content
     $chapterBar.textContent = ch.title;
