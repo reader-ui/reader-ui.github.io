@@ -799,52 +799,104 @@
   }
 
   // ============ Parse chapters ============
+
+  // Collect all regex matches as {title, index} from text
+  function collectMatches(text, regex) {
+    var results = [], m;
+    while ((m = regex.exec(text)) !== null) {
+      results.push({ title: m[1].trim(), index: m.index });
+    }
+    return results;
+  }
+
+  // Validate numbered chapter candidates (1. 2. 3. ...)
+  // Returns the candidates if they look like real chapters, otherwise []
+  function validateNumberedSplits(text, candidates) {
+    if (candidates.length < 2) return [];
+
+    // Extract the leading number from each candidate
+    var nums = candidates.map(function (c) { return parseInt(c.title, 10); });
+
+    // Must start at 1
+    if (nums[0] !== 1) return [];
+
+    // Numbers must be strictly ascending
+    for (var i = 1; i < nums.length; i++) {
+      if (nums[i] <= nums[i - 1]) return [];
+    }
+
+    // Lines should be short (chapter headings, not paragraphs) — max 80 chars
+    var allShort = candidates.every(function (c) { return c.title.length <= 80; });
+    if (!allShort) return [];
+
+    // Candidates should be spread out, not clustered on consecutive lines
+    // (consecutive numbered lines = a list inside a paragraph, not chapters)
+    var lines = text.split('\n');
+    var lineNums = candidates.map(function (c) {
+      return text.slice(0, c.index).split('\n').length;
+    });
+    var consecutiveCount = 0;
+    for (var j = 1; j < lineNums.length; j++) {
+      // If two "chapter" headings are within 2 lines of each other, suspicious
+      if (lineNums[j] - lineNums[j - 1] <= 2) consecutiveCount++;
+    }
+    // If more than half are clustered, it's probably a list, not chapters
+    if (consecutiveCount > lineNums.length * 0.5) return [];
+
+    return candidates;
+  }
+
   function parseChapters(text) {
     chapters = [];
-    // Match chapter heading lines:
-    //   第一章 ..., 第二十三章 ..., 第1章 ...  (Chinese style)
-    //   1. ..., 2. ..., 123. ...               (Numbered style)
-    const chapterRegex = /^(第[零一二三四五六七八九十百千万0-9]+章[^\n]*|(\d+)\.\s+[^\n]*)/gm;
-    let match;
-    const splits = [];
+    var splits = [];
 
-    while ((match = chapterRegex.exec(text)) !== null) {
-      splits.push({ title: match[1].trim(), index: match.index });
-    }
+    // --- Strategy 1: Chinese chapter markers (第X章) ---
+    // Highest confidence — very unlikely to be false positives
+    splits = collectMatches(text, /^(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
 
-    // For numbered format (1. 2. 3.), verify they form a sequential series
-    // starting from 1 to avoid false positives on random numbered lines
-    if (splits.length > 0 && !(/^第/.test(splits[0].title))) {
-      const numbered = splits.every(function (s) { return /^\d+\.\s/.test(s.title); });
-      if (numbered) {
-        const firstNum = parseInt(splits[0].title, 10);
-        if (firstNum !== 1) {
-          // Doesn't start from 1 — likely not real chapters
-          chapters = [{ title: currentBook.name.replace(/\.txt$/i, ''), content: text.trim() }];
-          return;
-        }
-      }
-    }
-
+    // --- Strategy 2: Numbered with space/text after dot: "1. Title" or "1.Title" ---
     if (splits.length === 0) {
-      // No chapters found — treat entire text as one chapter
+      // Match: start of line, digits, dot, then any non-empty content on that line
+      var candidates = collectMatches(text, /^(\d+\.\S[^\n]*)/gm);
+      splits = validateNumberedSplits(text, candidates);
+    }
+
+    // --- Strategy 3: Numbered with space after dot: "1. Title" ---
+    if (splits.length === 0) {
+      var candidates2 = collectMatches(text, /^(\d+\.\s+[^\n]*)/gm);
+      splits = validateNumberedSplits(text, candidates2);
+    }
+
+    // --- Strategy 4: Bare numbered lines: "1." on its own line ---
+    if (splits.length === 0) {
+      var candidates3 = collectMatches(text, /^(\d+\.)\s*$/gm);
+      splits = validateNumberedSplits(text, candidates3);
+    }
+
+    // --- Strategy 5: "Chapter N" style (English) ---
+    if (splits.length === 0) {
+      splits = collectMatches(text, /^(Chapter\s+\d+[^\n]*)/gim);
+    }
+
+    // --- No chapters detected — treat whole text as one chapter ---
+    if (splits.length === 0) {
       chapters = [{ title: currentBook.name.replace(/\.txt$/i, ''), content: text.trim() }];
       return;
     }
 
     // Content before first chapter (could be book title / preface)
-    const preface = text.slice(0, splits[0].index).trim();
+    var preface = text.slice(0, splits[0].index).trim();
     if (preface.length > 0) {
       chapters.push({ title: 'Preface', content: preface });
     }
 
-    for (let i = 0; i < splits.length; i++) {
-      const start = splits[i].index;
-      const end = i + 1 < splits.length ? splits[i + 1].index : text.length;
-      const raw = text.slice(start, end).trim();
+    for (var i = 0; i < splits.length; i++) {
+      var start = splits[i].index;
+      var end = i + 1 < splits.length ? splits[i + 1].index : text.length;
+      var raw = text.slice(start, end).trim();
       // Separate the title line from body
-      const nlIdx = raw.indexOf('\n');
-      const body = nlIdx >= 0 ? raw.slice(nlIdx + 1).trim() : '';
+      var nlIdx = raw.indexOf('\n');
+      var body = nlIdx >= 0 ? raw.slice(nlIdx + 1).trim() : '';
       chapters.push({ title: splits[i].title, content: body });
     }
   }
