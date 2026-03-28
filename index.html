@@ -854,26 +854,17 @@
     // Highest confidence — very unlikely to be false positives
     splits = collectMatches(text, /^(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
 
-    // --- Strategy 2: Numbered with space/text after dot: "1. Title" or "1.Title" ---
+    // --- Strategy 2: Numbered chapters (universal) ---
+    // Single regex catches ALL numbered formats:
+    //   1.Title  1. Title  1."Title"  1."Title"  1.《Title》  1.  1、Title  1．Title
     if (splits.length === 0) {
-      // Match: start of line, digits, dot, then any non-empty content on that line
-      var candidates = collectMatches(text, /^(\d+\.\S[^\n]*)/gm);
+      var candidates = collectMatches(text, /^(\d+[.\u3001\uff0e][^\n]*)/gm);
+      // Trim trailing whitespace from titles so bare "1. " becomes "1."
+      candidates.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
       splits = validateNumberedSplits(text, candidates);
     }
 
-    // --- Strategy 3: Numbered with space after dot: "1. Title" ---
-    if (splits.length === 0) {
-      var candidates2 = collectMatches(text, /^(\d+\.\s+[^\n]*)/gm);
-      splits = validateNumberedSplits(text, candidates2);
-    }
-
-    // --- Strategy 4: Bare numbered lines: "1." on its own line ---
-    if (splits.length === 0) {
-      var candidates3 = collectMatches(text, /^(\d+\.)\s*$/gm);
-      splits = validateNumberedSplits(text, candidates3);
-    }
-
-    // --- Strategy 5: "Chapter N" style (English) ---
+    // --- Strategy 3: "Chapter N" style (English) ---
     if (splits.length === 0) {
       splits = collectMatches(text, /^(Chapter\s+\d+[^\n]*)/gim);
     }
