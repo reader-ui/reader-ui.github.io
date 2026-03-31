@@ -6,49 +6,63 @@
 <title>Book Reader</title>
 <style>
   :root {
-    --bg: #f5f0e8;
-    --bg-sidebar: #ede6d8;
+    --bg: #f6f2eb;
+    --bg-sidebar: #eee8da;
     --bg-card: #ffffff;
-    --text: #2c2418;
+    --text: #1e1a14;
     --text-secondary: #6b5e4f;
-    --accent: #8b6914;
+    --accent: #9a7420;
+    --accent-hover: #7a5c18;
     --accent-light: #c9a84c;
-    --border: #d4cbb8;
-    --shadow: rgba(44, 36, 24, 0.08);
-    --reader-bg: #faf7f0;
-    --reader-text: #33291c;
-    --chapter-hover: rgba(139, 105, 20, 0.08);
+    --accent-glow: rgba(154, 116, 32, 0.12);
+    --border: #ddd5c4;
+    --shadow-sm: 0 1px 3px rgba(44, 36, 24, 0.06);
+    --shadow-md: 0 4px 16px rgba(44, 36, 24, 0.08);
+    --shadow-lg: 0 8px 32px rgba(44, 36, 24, 0.10);
+    --reader-bg: #faf8f3;
+    --reader-text: #2a2318;
+    --chapter-hover: rgba(154, 116, 32, 0.06);
     --scrollbar-thumb: #c4b89a;
     --scrollbar-track: transparent;
-    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   [data-theme="dark"] {
-    --bg: #1a1a1a;
-    --bg-sidebar: #222222;
-    --bg-card: #2a2a2a;
-    --text: #e0d6c8;
+    --bg: #141210;
+    --bg-sidebar: #1c1a17;
+    --bg-card: #242220;
+    --text: #e4ddd2;
     --text-secondary: #9a8e7e;
-    --accent: #d4a843;
+    --accent: #dbb34e;
+    --accent-hover: #c99f3a;
     --accent-light: #e8c96a;
-    --border: #3a3a3a;
-    --shadow: rgba(0, 0, 0, 0.3);
-    --reader-bg: #252220;
-    --reader-text: #d8cfc2;
-    --chapter-hover: rgba(212, 168, 67, 0.1);
-    --scrollbar-thumb: #555;
+    --accent-glow: rgba(219, 179, 78, 0.10);
+    --border: #332f2a;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --reader-bg: #1a1816;
+    --reader-text: #dcd4c6;
+    --chapter-hover: rgba(219, 179, 78, 0.08);
+    --scrollbar-thumb: #4a4540;
     --scrollbar-track: transparent;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  html { -webkit-tap-highlight-color: transparent; }
+
   body {
-    font-family: "Noto Serif SC", "Source Han Serif CN", "Songti SC", "SimSun", Georgia, serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     background: var(--bg);
     color: var(--text);
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     transition: background var(--transition), color var(--transition);
+    -webkit-font-smoothing: antialiased;
   }
 
   ::-webkit-scrollbar { width: 6px; }
@@ -56,27 +70,31 @@
   ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-  /* ---------- Welcome Screen ---------- */
+  /* ========== Welcome Screen ========== */
   #welcome-screen {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
-    padding: 40px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 48px 40px 60px;
     text-align: center;
+    overflow-y: auto;
   }
 
   #welcome-screen .logo {
-    font-size: 48px;
-    margin-bottom: 8px;
+    font-size: 56px;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
   }
 
   #welcome-screen h1 {
-    font-size: 32px;
-    font-weight: 700;
-    margin-bottom: 8px;
+    font-size: 30px;
+    font-weight: 800;
+    margin-bottom: 6px;
     color: var(--accent);
+    letter-spacing: -0.02em;
+    font-family: "Noto Serif SC", Georgia, serif;
   }
 
   #welcome-screen p {
@@ -85,21 +103,23 @@
     margin-bottom: 28px;
   }
 
-  /* ---------- Tab bar ---------- */
+  /* ========== Tab bar ========== */
   .tab-bar {
     display: flex;
-    gap: 0;
-    margin-bottom: 28px;
+    gap: 4px;
+    margin-bottom: 32px;
+    padding: 4px;
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    max-width: 320px;
+    border-radius: 14px;
+    max-width: 280px;
     width: 100%;
+    box-shadow: var(--shadow-sm);
   }
 
   .tab-btn {
     flex: 1;
-    padding: 10px 24px;
+    padding: 10px 20px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
@@ -108,25 +128,93 @@
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition);
-    position: relative;
+    border-radius: 10px;
   }
-
-  .tab-btn:not(:last-child) { border-right: 1px solid var(--border); }
 
   .tab-btn:hover { color: var(--text); background: var(--chapter-hover); }
 
   .tab-btn.active {
     background: var(--accent);
     color: #fff;
+    box-shadow: 0 2px 8px rgba(154, 116, 32, 0.25);
   }
 
-  .tab-panel { display: none; width: 100%; max-width: 900px; }
+  [data-theme="dark"] .tab-btn.active {
+    box-shadow: 0 2px 8px rgba(219, 179, 78, 0.2);
+  }
+
+  .tab-panel { display: none; width: 100%; max-width: 960px; }
   .tab-panel.active { display: block; }
 
-  /* ---------- Links list ---------- */
+  /* ========== Book grid ========== */
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    width: 100%;
+  }
+
+  .book-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .book-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, var(--accent), var(--accent-light));
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-light);
+  }
+
+  .book-card:active { transform: translateY(-1px); }
+  .book-card:hover::before { transform: scaleY(1); }
+
+  .book-card .book-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .book-card .book-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.45;
+    word-break: break-word;
+    font-family: "Noto Serif SC", Georgia, serif;
+  }
+
+  .book-card .book-ext {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    opacity: 0.7;
+  }
+
+  /* ========== Links list ========== */
   .links-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 10px;
     width: 100%;
   }
@@ -137,37 +225,39 @@
     gap: 16px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius);
     padding: 16px 20px;
     text-decoration: none;
     color: var(--text);
     transition: all var(--transition);
     text-align: left;
+    box-shadow: var(--shadow-sm);
   }
 
   .link-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 24px var(--shadow);
+    box-shadow: var(--shadow-md);
     border-color: var(--accent-light);
   }
 
+  .link-card:active { transform: translateY(0); }
+
   .link-icon {
-    font-size: 24px;
+    font-size: 20px;
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 42px; height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--chapter-hover);
-    border-radius: 8px;
+    background: var(--accent-glow);
+    border-radius: var(--radius-sm);
   }
 
   .link-info { flex: 1; min-width: 0; }
 
   .link-url {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--accent);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -178,96 +268,70 @@
   .link-desc {
     font-size: 13px;
     color: var(--text-secondary);
-    margin-top: 3px;
+    margin-top: 4px;
     line-height: 1.4;
   }
 
   .link-arrow {
-    color: var(--text-secondary);
+    color: var(--border);
     font-size: 18px;
     flex-shrink: 0;
-    transition: color var(--transition);
+    transition: all var(--transition);
   }
 
-  .link-card:hover .link-arrow { color: var(--accent); }
+  .link-card:hover .link-arrow { color: var(--accent); transform: translateX(2px); }
 
   .links-empty {
     text-align: center;
     color: var(--text-secondary);
     font-size: 14px;
-    padding: 40px 20px;
+    padding: 48px 20px;
+    line-height: 1.8;
   }
 
   .links-empty code {
     background: var(--bg-sidebar);
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 4px;
     font-size: 13px;
   }
 
-  .book-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-    max-width: 900px;
+  /* ========== Local file picker ========== */
+  .local-upload {
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
     width: 100%;
+    text-align: center;
   }
 
-  .book-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 28px 20px;
-    cursor: pointer;
-    transition: all var(--transition);
-    position: relative;
-    overflow: hidden;
-    text-align: left;
-  }
-
-  .book-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--accent);
-    transform: scaleY(0);
-    transition: transform var(--transition);
-  }
-
-  .book-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 30px var(--shadow);
-    border-color: var(--accent-light);
-  }
-
-  .book-card:hover::before { transform: scaleY(1); }
-
-  .book-card .book-icon {
-    font-size: 32px;
+  .local-upload-label {
+    font-size: 13px;
+    color: var(--text-secondary);
     margin-bottom: 14px;
     display: block;
   }
 
-  .book-card .book-title {
-    font-size: 17px;
-    font-weight: 600;
-    line-height: 1.4;
-    word-break: break-word;
-  }
-
-  .book-card .book-ext {
-    font-size: 12px;
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 36px 20px;
+    cursor: pointer;
+    transition: all var(--transition);
     color: var(--text-secondary);
-    margin-top: 8px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    font-size: 14px;
   }
 
-  /* ---------- Reader Layout ---------- */
-  #reader-screen { display: none; height: 100vh; }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: var(--accent);
+  }
+
+  .drop-zone input[type="file"] { display: none; }
+
+  /* ========== Reader Layout ========== */
+  #reader-screen { display: none; height: 100vh; height: 100dvh; }
   #reader-screen.active { display: flex; }
 
   /* Sidebar */
@@ -283,18 +347,18 @@
   }
 
   .sidebar-header {
-    padding: 20px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     gap: 12px;
+    min-height: 56px;
   }
 
   .btn-back {
-    width: 36px;
-    height: 36px;
+    width: 40px; height: 40px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text);
     cursor: pointer;
@@ -306,11 +370,11 @@
     flex-shrink: 0;
   }
 
-  .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-back:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
 
   .sidebar-header .book-name {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -325,24 +389,23 @@
 
   .chapter-search-input {
     width: 100%;
-    padding: 9px 14px 9px 36px;
+    padding: 10px 14px 10px 38px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text);
-    font-size: 13px;
+    font-size: 14px;
     font-family: inherit;
     outline: none;
-    transition: border-color var(--transition);
+    transition: all var(--transition);
   }
 
-  .chapter-search-input::placeholder { color: var(--text-secondary); opacity: 0.7; }
-  .chapter-search-input:focus { border-color: var(--accent); }
+  .chapter-search-input::placeholder { color: var(--text-secondary); opacity: 0.6; }
+  .chapter-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
   .chapter-search-icon {
     position: absolute;
-    left: 28px;
-    top: 50%;
+    left: 30px; top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
     font-size: 14px;
@@ -351,17 +414,15 @@
 
   .chapter-search-clear {
     position: absolute;
-    right: 28px;
-    top: 50%;
+    right: 28px; top: 50%;
     transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
+    width: 22px; height: 22px;
     border: none;
     border-radius: 50%;
     background: var(--border);
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     display: none;
     align-items: center;
     justify-content: center;
@@ -375,28 +436,8 @@
   .chapter-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 0;
-  }
-
-  .chapter-item.hidden { display: none; }
-
-  .chapter-no-results {
-    padding: 24px;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 13px;
-    display: none;
-  }
-
-  .chapter-no-results.visible { display: block; }
-
-  .chapter-item .highlight {
-    background: rgba(139, 105, 20, 0.25);
-    border-radius: 2px;
-  }
-
-  [data-theme="dark"] .chapter-item .highlight {
-    background: rgba(212, 168, 67, 0.3);
+    padding: 6px 0;
+    -webkit-overflow-scrolling: touch;
   }
 
   .chapter-item {
@@ -417,11 +458,33 @@
   .chapter-item.active {
     color: var(--accent);
     border-left-color: var(--accent);
-    background: var(--chapter-hover);
+    background: var(--accent-glow);
     font-weight: 600;
   }
 
-  /* Reader content */
+  .chapter-item.hidden { display: none; }
+
+  .chapter-no-results {
+    padding: 28px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+    display: none;
+  }
+
+  .chapter-no-results.visible { display: block; }
+
+  .chapter-item .highlight {
+    background: rgba(154, 116, 32, 0.2);
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  [data-theme="dark"] .chapter-item .highlight {
+    background: rgba(219, 179, 78, 0.22);
+  }
+
+  /* ========== Reader content ========== */
   .reader-main {
     flex: 1;
     display: flex;
@@ -438,20 +501,22 @@
     border-bottom: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
+    gap: 12px;
   }
 
   .topbar-left {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1;
+    min-width: 0;
   }
 
   .btn-toggle-sidebar {
     display: none;
-    width: 36px;
-    height: 36px;
+    width: 42px; height: 42px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text);
     cursor: pointer;
@@ -459,6 +524,7 @@
     align-items: center;
     justify-content: center;
     transition: all var(--transition);
+    flex-shrink: 0;
   }
 
   .btn-toggle-sidebar:hover { border-color: var(--accent); color: var(--accent); }
@@ -475,14 +541,14 @@
   .topbar-controls {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .ctrl-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px; height: 40px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text);
     cursor: pointer;
@@ -491,17 +557,21 @@
     justify-content: center;
     font-size: 15px;
     transition: all var(--transition);
+    -webkit-user-select: none;
+    user-select: none;
   }
 
-  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
   .ctrl-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   .font-size-display {
     font-size: 13px;
     color: var(--text-secondary);
-    min-width: 36px;
+    min-width: 32px;
     text-align: center;
     user-select: none;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
   .reader-content {
@@ -509,6 +579,7 @@
     overflow-y: auto;
     background: var(--reader-bg);
     transition: background var(--transition);
+    -webkit-overflow-scrolling: touch;
   }
 
   .reader-content-inner {
@@ -517,22 +588,24 @@
     padding: 48px 40px 80px;
     color: var(--reader-text);
     font-size: 18px;
-    line-height: 1.9;
-    letter-spacing: 0.02em;
+    line-height: 1.95;
+    letter-spacing: 0.01em;
     transition: font-size var(--transition);
+    font-family: "Noto Serif SC", "Source Han Serif CN", "Songti SC", Georgia, serif;
   }
 
   .reader-content-inner h2 {
-    font-size: 1.5em;
+    font-size: 1.45em;
     font-weight: 700;
     color: var(--accent);
-    margin-bottom: 28px;
+    margin-bottom: 32px;
     padding-bottom: 16px;
     border-bottom: 2px solid var(--border);
+    line-height: 1.4;
   }
 
   .reader-content-inner p {
-    margin-bottom: 1em;
+    margin-bottom: 0.9em;
     text-indent: 2em;
     text-align: justify;
   }
@@ -544,24 +617,28 @@
     margin-top: 48px;
     padding-top: 24px;
     border-top: 1px solid var(--border);
+    gap: 12px;
   }
 
   .nav-btn {
-    padding: 10px 24px;
+    padding: 12px 28px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text);
     cursor: pointer;
     font-size: 14px;
     font-family: inherit;
+    font-weight: 600;
     transition: all var(--transition);
+    box-shadow: var(--shadow-sm);
   }
 
-  .nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .nav-btn:active:not(:disabled) { transform: scale(0.97); }
   .nav-btn:disabled { opacity: 0.3; cursor: default; }
 
-  /* Loading / Error states */
+  /* ========== Loading / Error ========== */
   .loading-screen {
     display: flex;
     flex-direction: column;
@@ -572,12 +649,11 @@
   }
 
   .spinner {
-    width: 40px;
-    height: 40px;
+    width: 36px; height: 36px;
     border: 3px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: spin 0.7s linear infinite;
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -590,63 +666,29 @@
   }
 
   .retry-btn {
-    padding: 10px 28px;
+    padding: 12px 32px;
     border: 1px solid var(--accent);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--accent);
     cursor: pointer;
     font-size: 14px;
     font-family: inherit;
+    font-weight: 600;
     transition: all var(--transition);
   }
 
   .retry-btn:hover { background: var(--accent); color: #fff; }
 
-  /* Local file picker */
-  .local-upload {
-    margin-top: 32px;
-    padding-top: 28px;
-    border-top: 1px solid var(--border);
-    max-width: 900px;
-    width: 100%;
-    text-align: center;
-  }
-
-  .local-upload-label {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 14px;
-    display: block;
-  }
-
-  .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 32px 20px;
-    cursor: pointer;
-    transition: all var(--transition);
-    color: var(--text-secondary);
-    font-size: 14px;
-  }
-
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: var(--chapter-hover);
-    color: var(--accent);
-  }
-
-  .drop-zone input[type="file"] {
-    display: none;
-  }
-
-  /* Sidebar overlay for mobile */
+  /* Sidebar overlay */
   .sidebar-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.45);
     z-index: 9;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
 
   .sidebar-overlay.active { display: block; }
@@ -660,29 +702,60 @@
 
   .progress-bar-inner {
     height: 100%;
-    background: var(--accent);
+    background: linear-gradient(90deg, var(--accent), var(--accent-light));
     width: 0%;
     transition: width 0.15s linear;
   }
 
-  /* Responsive */
-  @media (max-width: 768px) {
+  /* ========== Responsive: Tablet (portrait & landscape) ========== */
+  @media (max-width: 1024px) {
     .sidebar {
       position: fixed;
-      left: 0;
-      top: 0;
-      height: 100vh;
+      left: 0; top: 0;
+      height: 100vh; height: 100dvh;
       transform: translateX(-100%);
+      box-shadow: var(--shadow-lg);
     }
     .sidebar.open { transform: translateX(0); }
     .btn-toggle-sidebar { display: flex; }
-    .book-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
-    #welcome-screen { padding: 24px; }
+    .reader-content-inner { padding: 40px 32px 72px; }
+  }
+
+  /* Tablet landscape — 2-column links */
+  @media (min-width: 600px) and (max-width: 1024px) {
+    .links-list {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* ========== Responsive: Mobile ========== */
+  @media (max-width: 600px) {
+    #welcome-screen { padding: 32px 20px 48px; }
+    #welcome-screen .logo { font-size: 44px; }
     #welcome-screen h1 { font-size: 24px; }
-    .reader-content-inner { padding: 32px 20px 60px; }
+    .book-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .book-card { padding: 20px 16px; }
+    .book-card .book-icon { font-size: 28px; margin-bottom: 10px; }
+    .book-card .book-title { font-size: 15px; }
+    .reader-content-inner { padding: 28px 18px 56px; font-size: 17px; }
+    .reader-topbar { padding: 0 16px; height: 52px; }
+    .ctrl-btn { width: 38px; height: 38px; }
+    .btn-toggle-sidebar { width: 38px; height: 38px; }
+    .nav-btn { padding: 11px 18px; font-size: 13px; }
+    .link-card { padding: 14px 16px; gap: 12px; }
+    .drop-zone { padding: 28px 16px; }
+    .sidebar { width: 280px; min-width: 280px; }
+  }
+
+  /* ========== Responsive: Very small screens ========== */
+  @media (max-width: 380px) {
+    .book-grid { grid-template-columns: 1fr; }
+    .topbar-controls { gap: 4px; }
+    .ctrl-btn { width: 34px; height: 34px; font-size: 13px; }
+    .font-size-display { min-width: 24px; font-size: 12px; }
   }
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -764,7 +837,7 @@
   let currentBook = null;
   let chapters = [];
   let currentChapterIndex = 0;
-  let fontSize = 18;
+  let fontSize = parseInt(localStorage.getItem('reader-fontsize'), 10) || 18;
   let darkMode = localStorage.getItem('reader-dark') === '1';
 
   // ============ DOM refs ============
@@ -798,7 +871,11 @@
   function applyFontSize() {
     $readerText.style.fontSize = fontSize + 'px';
     $fontDisplay.textContent = fontSize;
+    localStorage.setItem('reader-fontsize', fontSize);
   }
+  // Apply saved font size on load
+  if (fontSize !== 18) applyFontSize();
+
   document.getElementById('btn-font-up').addEventListener('click', function () {
     if (fontSize < 32) { fontSize += 2; applyFontSize(); }
   });
@@ -876,13 +953,42 @@
     $reader.classList.remove('active');
     $welcome.style.display = '';
     $chapterSearch.value = '';
+    clearReadingPosition();
   });
+
+  // ============ Reading position persistence ============
+  var scrollSaveTimer = null;
+
+  function saveReadingPosition() {
+    if (!currentBook) return;
+    var pos = {
+      book: currentBook.name,
+      chapter: currentChapterIndex,
+      scroll: $readerContent.scrollTop,
+      total: $readerContent.scrollHeight
+    };
+    localStorage.setItem('reader-position', JSON.stringify(pos));
+  }
+
+  function clearReadingPosition() {
+    localStorage.removeItem('reader-position');
+  }
+
+  function getSavedPosition() {
+    try {
+      return JSON.parse(localStorage.getItem('reader-position'));
+    } catch (e) { return null; }
+  }
 
   // ============ Progress bar ============
   $readerContent.addEventListener('scroll', function () {
     const el = $readerContent;
     const pct = el.scrollTop / (el.scrollHeight - el.clientHeight) * 100;
     $progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+
+    // Debounce save scroll position
+    clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = setTimeout(saveReadingPosition, 300);
   });
 
   // ============ Detect repo info from URL ============
@@ -923,7 +1029,6 @@
       let data = await fetchBookList(info, 'main');
       if (!data) data = await fetchBookList(info, 'master');
       if (!data) {
-        // No books folder on remote — still show welcome for local file upload
         $loading.style.display = 'none';
         $welcome.style.display = '';
         return;
@@ -931,10 +1036,21 @@
 
       books = data.filter(f => f.name.endsWith('.txt'));
       renderBookGrid();
+
+      // Auto-resume: check if user was reading a book last time
+      var saved = getSavedPosition();
+      if (saved && saved.book) {
+        var match = books.find(function (b) { return b.name === saved.book; });
+        if (match) {
+          $loading.style.display = 'none';
+          openBook(match, saved.chapter, saved.scroll);
+          return;
+        }
+      }
+
       $loading.style.display = 'none';
       $welcome.style.display = '';
     } catch (e) {
-      // Network error — still show welcome for local file upload
       $loading.style.display = 'none';
       $welcome.style.display = '';
     }
@@ -951,7 +1067,7 @@
   // (defined below, after local file logic)
 
   // ============ Open a book ============
-  async function openBook(book) {
+  async function openBook(book, resumeChapter, resumeScroll) {
     $welcome.style.display = 'none';
     $reader.classList.add('active');
     $readerText.innerHTML = '<div style="text-align:center;padding:60px 0;"><div class="spinner" style="margin:0 auto 16px;"></div>Loading book...</div>';
@@ -964,7 +1080,6 @@
     try {
       var text;
       if (book._localText) {
-        // Local file — text already loaded
         text = book._localText;
       } else {
         var res = await fetch(book.download_url);
@@ -975,7 +1090,16 @@
       currentBook = book;
       parseChapters(text);
       renderChapterList();
-      goToChapter(0);
+
+      var chIdx = (typeof resumeChapter === 'number' && resumeChapter < chapters.length) ? resumeChapter : 0;
+      goToChapter(chIdx);
+
+      // Restore scroll position after content renders
+      if (typeof resumeScroll === 'number' && resumeScroll > 0) {
+        requestAnimationFrame(function () {
+          $readerContent.scrollTop = resumeScroll;
+        });
+      }
     } catch (e) {
       $readerText.innerHTML = '<div class="error-msg">Failed to load book: ' + escapeHtml(e.message) + '</div>';
     }
@@ -1139,6 +1263,9 @@
     $readerContent.scrollTop = 0;
     $progressBar.style.width = '0%';
 
+    // Save reading position
+    saveReadingPosition();
+
     document.getElementById('nav-prev').addEventListener('click', function () { goToChapter(currentChapterIndex - 1); });
     document.getElementById('nav-next').addEventListener('click', function () { goToChapter(currentChapterIndex + 1); });
   }
@@ -1152,7 +1279,7 @@
       $chapterSearch.focus();
       $chapterSearch.select();
       // On mobile, also open sidebar so search is visible
-      if (window.innerWidth <= 768) {
+      if (window.innerWidth <= 1024) {
         $sidebar.classList.add('open');
         $overlay.classList.add('active');
       }
