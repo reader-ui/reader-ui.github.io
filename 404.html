@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Redirecting...</title>
+<script>
+  // GitHub Pages SPA redirect:
+  // When someone visits /repo/books/BookName/3 directly, GitHub serves 404.
+  // This redirects to index.html while preserving the full path as a query param,
+  // so the SPA router in index.html can pick it up.
+  var path = window.location.pathname;
+  var search = window.location.search;
+  var hash = window.location.hash;
+  // Store the path and redirect to base
+  sessionStorage.setItem('spa-redirect', path + search + hash);
+  // Navigate to the root of the site (same origin)
+  var segments = path.split('/').filter(Boolean);
+  // The first segment is the repo name on GitHub Pages
+  var base = segments.length > 0 ? '/' + segments[0] + '/' : '/';
+  window.location.replace(base);
+</script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>

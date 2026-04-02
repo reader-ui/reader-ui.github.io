@@ -953,7 +953,9 @@
     $reader.classList.remove('active');
     $welcome.style.display = '';
     $chapterSearch.value = '';
+    currentBook = null;
     clearReadingPosition();
+    resetUrl();
   });
 
   // ============ Reading position persistence ============
@@ -994,10 +996,9 @@
   // ============ Detect repo info from URL ============
   function getRepoInfo() {
     const loc = window.location;
-    const hostname = loc.hostname; // e.g. "user.github.io"
-    const path = loc.pathname;     // e.g. "/repo/"
+    const hostname = loc.hostname;
+    const path = loc.pathname;
 
-    // GitHub Pages: username.github.io/repo
     if (hostname.endsWith('.github.io')) {
       const owner = hostname.replace('.github.io', '');
       const parts = path.split('/').filter(Boolean);
@@ -1006,6 +1007,88 @@
     }
     return null;
   }
+
+  // ============ URL routing ============
+  // URL format: /repo/books/BookName/ChapterNumber
+  var basePath = '/';
+  var info = getRepoInfo();
+  if (info && info.repo) basePath = '/' + info.repo + '/';
+
+  // Handle SPA redirect from 404.html
+  (function () {
+    var redirectPath = sessionStorage.getItem('spa-redirect');
+    if (redirectPath) {
+      sessionStorage.removeItem('spa-redirect');
+      if (redirectPath !== window.location.pathname) {
+        history.replaceState(null, '', redirectPath);
+      }
+    }
+  })();
+
+  var suppressPopState = false;
+
+  function getBookSlug(bookName) {
+    return bookName.replace(/\.txt$/i, '');
+  }
+
+  function updateUrl(bookName, chapterIdx, replace) {
+    if (!history.pushState) return;
+    var slug = encodeURIComponent(getBookSlug(bookName));
+    var chNum = chapterIdx + 1; // 1-based in URL
+    var newPath = basePath + 'books/' + slug + '/' + chNum;
+    if (window.location.pathname !== newPath) {
+      var state = { book: bookName, chapter: chapterIdx };
+      if (replace) {
+        history.replaceState(state, '', newPath);
+      } else {
+        history.pushState(state, '', newPath);
+      }
+    }
+  }
+
+  function resetUrl() {
+    if (!history.pushState) return;
+    if (window.location.pathname !== basePath) {
+      history.pushState(null, '', basePath);
+    }
+  }
+
+  function parseUrlRoute() {
+    var path = decodeURIComponent(window.location.pathname);
+    // Match: /basePath/books/BookName/ChapterNumber
+    var prefix = basePath + 'books/';
+    if (!path.startsWith(prefix)) return null;
+    var rest = path.slice(prefix.length).replace(/\/$/, '');
+    // rest = "BookName/ChapterNumber" or "BookName"
+    var lastSlash = rest.lastIndexOf('/');
+    if (lastSlash > 0) {
+      var bookSlug = rest.slice(0, lastSlash);
+      var chNum = parseInt(rest.slice(lastSlash + 1), 10);
+      return { bookSlug: bookSlug, chapter: isNaN(chNum) ? 0 : chNum - 1 };
+    }
+    return { bookSlug: rest, chapter: 0 };
+  }
+
+  // Handle browser back/forward
+  window.addEventListener('popstate', function () {
+    if (suppressPopState) return;
+    var route = parseUrlRoute();
+    if (route && books.length > 0) {
+      var match = books.find(function (b) {
+        return getBookSlug(b.name) === route.bookSlug;
+      });
+      if (match) {
+        suppressPopState = true;
+        openBook(match, route.chapter).then(function () { suppressPopState = false; });
+        return;
+      }
+    }
+    // No route or no match — show library
+    $reader.classList.remove('active');
+    $welcome.style.display = '';
+    currentBook = null;
+    clearReadingPosition();
+  });
 
   // ============ Text normalization ============
   function normalizeText(text) {
@@ -1037,7 +1120,20 @@
       books = data.filter(f => f.name.endsWith('.txt'));
       renderBookGrid();
 
-      // Auto-resume: check if user was reading a book last time
+      // Priority 1: URL route (e.g. /repo/books/BookName/3)
+      var route = parseUrlRoute();
+      if (route) {
+        var routeMatch = books.find(function (b) {
+          return getBookSlug(b.name) === route.bookSlug;
+        });
+        if (routeMatch) {
+          $loading.style.display = 'none';
+          openBook(routeMatch, route.chapter);
+          return;
+        }
+      }
+
+      // Priority 2: localStorage saved position (scroll restore)
       var saved = getSavedPosition();
       if (saved && saved.book) {
         var match = books.find(function (b) { return b.name === saved.book; });
@@ -1092,7 +1188,13 @@
       renderChapterList();
 
       var chIdx = (typeof resumeChapter === 'number' && resumeChapter < chapters.length) ? resumeChapter : 0;
+      suppressPopState = true;
       goToChapter(chIdx);
+      // Use replaceState for initial open so it doesn't create extra history
+      if (currentBook && !book._localText) {
+        updateUrl(currentBook.name, chIdx, true);
+      }
+      suppressPopState = false;
 
       // Restore scroll position after content renders
       if (typeof resumeScroll === 'number' && resumeScroll > 0) {
@@ -1263,8 +1365,11 @@
     $readerContent.scrollTop = 0;
     $progressBar.style.width = '0%';
 
-    // Save reading position
+    // Save reading position & update URL
     saveReadingPosition();
+    if (currentBook && !suppressPopState) {
+      updateUrl(currentBook.name, idx);
+    }
 
     document.getElementById('nav-prev').addEventListener('click', function () { goToChapter(currentChapterIndex - 1); });
     document.getElementById('nav-next').addEventListener('click', function () { goToChapter(currentChapterIndex + 1); });
