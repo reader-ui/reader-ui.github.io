@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Book Reader</title>
 <style>
   :root {
@@ -52,17 +52,26 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  html { -webkit-tap-highlight-color: transparent; }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    height: 100%;
+    /* Prevent iOS overscroll bounce on the html/body level */
+    overflow: hidden;
+  }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     background: var(--bg);
     color: var(--text);
-    height: 100vh;
-    height: 100dvh;
+    height: 100%;
     overflow: hidden;
     transition: background var(--transition), color var(--transition);
     -webkit-font-smoothing: antialiased;
+    /* Prevent pull-to-refresh and overscroll on iOS */
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    /* Safe area insets for notch devices */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   ::-webkit-scrollbar { width: 6px; }
@@ -75,11 +84,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100%;
     padding: 48px 40px 60px;
     text-align: center;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   #welcome-screen .logo {
@@ -331,7 +342,7 @@
   .drop-zone input[type="file"] { display: none; }
 
   /* ========== Reader Layout ========== */
-  #reader-screen { display: none; height: 100vh; height: 100dvh; }
+  #reader-screen { display: none; height: 100%; }
   #reader-screen.active { display: flex; }
 
   /* Sidebar */
@@ -436,8 +447,10 @@
   .chapter-list {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 6px 0;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 
   .chapter-item {
@@ -577,9 +590,11 @@
   .reader-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     background: var(--reader-bg);
     transition: background var(--transition);
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
   }
 
   .reader-content-inner {
@@ -644,7 +659,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    height: 100%;
     gap: 20px;
   }
 
@@ -689,6 +704,9 @@
     z-index: 9;
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
+    /* Prevent scroll-through on iOS */
+    touch-action: none;
+    overscroll-behavior: none;
   }
 
   .sidebar-overlay.active { display: block; }
@@ -712,9 +730,10 @@
     .sidebar {
       position: fixed;
       left: 0; top: 0;
-      height: 100vh; height: 100dvh;
+      height: 100%;
       transform: translateX(-100%);
       box-shadow: var(--shadow-lg);
+      overscroll-behavior: contain;
     }
     .sidebar.open { transform: translateX(0); }
     .btn-toggle-sidebar { display: flex; }
@@ -745,6 +764,9 @@
     .link-card { padding: 14px 16px; gap: 12px; }
     .drop-zone { padding: 28px 16px; }
     .sidebar { width: 280px; min-width: 280px; }
+    /* Extra bottom padding for iOS home indicator */
+    .reader-content-inner { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+    .chapter-nav { padding-bottom: env(safe-area-inset-bottom); }
   }
 
   /* ========== Responsive: Very small screens ========== */
@@ -753,6 +775,379 @@
     .topbar-controls { gap: 4px; }
     .ctrl-btn { width: 34px; height: 34px; font-size: 13px; }
     .font-size-display { min-width: 24px; font-size: 12px; }
+  }
+
+  /* ========== Book card progress ========== */
+  .book-progress {
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 6px;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  /* ========== Mobile bottom toolbar ========== */
+  .mobile-toolbar {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: calc(52px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    z-index: 8;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 0 -2px 12px var(--shadow-sm);
+  }
+
+  .mobile-toolbar button {
+    flex: 1;
+    height: 52px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition);
+    font-family: inherit;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .mobile-toolbar button:active { color: var(--accent); }
+  .mobile-toolbar button.active-tool { color: var(--accent); }
+
+  /* ========== Tap zones (phone chapter nav) ========== */
+  .tap-zone {
+    position: fixed;
+    top: 56px; bottom: 52px;
+    width: 60px;
+    z-index: 5;
+    cursor: pointer;
+    opacity: 0;
+  }
+
+  .tap-zone-left { left: 0; }
+  .tap-zone-right { right: 0; }
+
+  .tap-zone-hint {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.2);
+  }
+
+  .tap-zone:active .tap-zone-hint { opacity: 0.7; }
+
+  /* ========== Settings panel ========== */
+  .settings-panel {
+    display: none;
+    position: fixed;
+    bottom: calc(52px + env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 20px 24px;
+    z-index: 8;
+    box-shadow: 0 -4px 20px var(--shadow-md);
+    border-radius: 16px 16px 0 0;
+    transition: transform var(--transition);
+  }
+
+  .settings-panel.open { display: block; }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+  }
+
+  .setting-row + .setting-row { border-top: 1px solid var(--border); }
+
+  .setting-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .setting-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .setting-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all var(--transition);
+  }
+
+  .setting-btn:active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .setting-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .setting-value {
+    min-width: 28px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== In-chapter text search ========== */
+  .text-search-bar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    z-index: 20;
+    padding: 0 12px;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .text-search-bar.open { display: flex; }
+
+  .text-search-bar input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .text-search-bar input:focus { border-color: var(--accent); }
+
+  .text-search-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .text-search-bar button {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+  }
+
+  .text-search-bar button:active { background: var(--accent); color: #fff; }
+
+  mark.search-hl { background: rgba(255, 200, 0, 0.35); border-radius: 2px; }
+  mark.search-hl.current { background: rgba(255, 140, 0, 0.55); }
+
+  /* ========== Bookmarks panel ========== */
+  .bookmarks-panel {
+    display: none;
+    position: fixed;
+    bottom: calc(52px + env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 16px;
+    z-index: 8;
+    box-shadow: 0 -4px 20px var(--shadow-md);
+    border-radius: 16px 16px 0 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bookmarks-panel.open { display: block; }
+
+  .bookmarks-panel h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .bookmark-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .bookmark-item:hover, .bookmark-item:active { background: var(--chapter-hover); }
+
+  .bookmark-item .bm-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .bookmark-item .bm-del {
+    width: 24px; height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .bookmark-item .bm-del:active { color: #c0392b; }
+
+  .bookmarks-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 16px;
+  }
+
+  /* ========== Shortcuts overlay ========== */
+  .shortcuts-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 30;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shortcuts-overlay.open { display: flex; }
+
+  .shortcuts-box {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    padding: 28px;
+    max-width: 400px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shortcuts-box h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .shortcut-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .shortcut-row kbd {
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text);
+  }
+
+  /* ========== Auto-scroll indicator ========== */
+  .autoscroll-badge {
+    display: none;
+    position: fixed;
+    top: 64px; right: 16px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    z-index: 15;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+  }
+
+  .autoscroll-badge.visible { display: block; }
+
+  /* ========== Fullscreen tweaks ========== */
+  :fullscreen .reader-topbar,
+  :fullscreen .mobile-toolbar { display: none !important; }
+  :fullscreen .reader-content { height: 100%; }
+  :fullscreen .progress-bar { display: none; }
+
+  /* ========== Mobile: show toolbar and tap zones ========== */
+  @media (max-width: 1024px) {
+    .mobile-toolbar { display: flex; }
+    .tap-zone { display: block; }
+    /* Adjust reader content for bottom toolbar */
+    .reader-content { padding-bottom: calc(52px + env(safe-area-inset-bottom)); }
+    /* Hide desktop topbar controls on mobile (moved to bottom toolbar) */
+    .topbar-controls { display: none; }
+    .reader-topbar { height: 48px; }
+  }
+
+  @media (min-width: 1025px) {
+    .tap-zone { display: none; }
+    .mobile-toolbar { display: none !important; }
+    .settings-panel { display: none !important; }
+    .bookmarks-panel {
+      bottom: 0;
+      max-width: 400px;
+      right: 0;
+      left: auto;
+      border-radius: var(--radius) 0 0 0;
+    }
+  }
+
+  /* ========== iOS-specific fixes ========== */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS Safari: prevent elastic bounce on non-scrollable containers */
+    .reader-topbar,
+    .sidebar-header,
+    .chapter-search,
+    .progress-bar {
+      touch-action: none;
+    }
+    /* Ensure scrollable areas get proper touch handling */
+    .reader-content,
+    .chapter-list,
+    #welcome-screen {
+      touch-action: pan-y;
+    }
   }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
@@ -828,6 +1223,91 @@
       <div class="reader-content-inner" id="reader-text"></div>
     </div>
   </div>
+  <!-- Tap zones for phone prev/next -->
+  <div class="tap-zone tap-zone-left" id="tap-left"><span class="tap-zone-hint">&#9664;</span></div>
+  <div class="tap-zone tap-zone-right" id="tap-right"><span class="tap-zone-hint">&#9654;</span></div>
+  <!-- Mobile bottom toolbar -->
+  <div class="mobile-toolbar" id="mobile-toolbar">
+    <button id="mb-chapters" title="Chapters">&#9776;</button>
+    <button id="mb-search" title="Search text">&#128269;</button>
+    <button id="mb-bookmark" title="Bookmark">&#9734;</button>
+    <button id="mb-bookmarks" title="Bookmarks">&#128278;</button>
+    <button id="mb-settings" title="Settings">&#9881;</button>
+  </div>
+  <!-- Settings panel -->
+  <div class="settings-panel" id="settings-panel">
+    <div class="setting-row">
+      <span class="setting-label">Font size</span>
+      <div class="setting-controls">
+        <button class="setting-btn" id="s-font-down">A-</button>
+        <span class="setting-value" id="s-font-val">18</span>
+        <button class="setting-btn" id="s-font-up">A+</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Font</span>
+      <div class="setting-controls">
+        <button class="setting-btn" id="s-font-serif" title="Serif" style="font-family:Georgia">Se</button>
+        <button class="setting-btn" id="s-font-sans" title="Sans-serif" style="font-family:sans-serif">Sa</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Line spacing</span>
+      <div class="setting-controls">
+        <button class="setting-btn" id="s-lh-down">&#8722;</button>
+        <span class="setting-value" id="s-lh-val">1.9</span>
+        <button class="setting-btn" id="s-lh-up">+</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Theme</span>
+      <div class="setting-controls">
+        <button class="setting-btn" id="s-theme">&#9790;</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Auto-scroll</span>
+      <div class="setting-controls">
+        <button class="setting-btn" id="s-autoscroll">&#9654;</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Fullscreen</span>
+      <div class="setting-controls">
+        <button class="setting-btn" id="s-fullscreen">&#9974;</button>
+      </div>
+    </div>
+  </div>
+  <!-- Bookmarks panel -->
+  <div class="bookmarks-panel" id="bookmarks-panel">
+    <h3>Bookmarks</h3>
+    <div id="bookmarks-list"></div>
+  </div>
+  <!-- Text search bar -->
+  <div class="text-search-bar" id="text-search-bar">
+    <input type="text" id="text-search-input" placeholder="Search in chapter..." autocomplete="off">
+    <span class="text-search-count" id="text-search-count"></span>
+    <button id="text-search-prev" title="Previous">&#9650;</button>
+    <button id="text-search-next" title="Next">&#9660;</button>
+    <button id="text-search-close" title="Close">&times;</button>
+  </div>
+  <!-- Auto-scroll badge -->
+  <div class="autoscroll-badge" id="autoscroll-badge">Auto &#9654; <span id="autoscroll-speed">1x</span></div>
+  <!-- Shortcuts overlay -->
+  <div class="shortcuts-overlay" id="shortcuts-overlay">
+    <div class="shortcuts-box">
+      <h3>Keyboard Shortcuts</h3>
+      <div class="shortcut-row"><span>Previous chapter</span><kbd>&#8592;</kbd></div>
+      <div class="shortcut-row"><span>Next chapter</span><kbd>&#8594;</kbd></div>
+      <div class="shortcut-row"><span>Search chapters</span><kbd>Ctrl+F</kbd></div>
+      <div class="shortcut-row"><span>Search in text</span><kbd>Ctrl+G</kbd></div>
+      <div class="shortcut-row"><span>Jump to chapter #</span><kbd>Ctrl+J</kbd></div>
+      <div class="shortcut-row"><span>Toggle bookmark</span><kbd>B</kbd></div>
+      <div class="shortcut-row"><span>Toggle fullscreen</span><kbd>F</kbd></div>
+      <div class="shortcut-row"><span>Show shortcuts</span><kbd>?</kbd></div>
+      <div class="shortcut-row"><span>Close</span><kbd>Esc</kbd></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -883,7 +1363,7 @@
     if (fontSize > 12) { fontSize -= 2; applyFontSize(); }
   });
 
-  // ============ Sidebar toggle (mobile) ============
+  // ============ Sidebar toggle (mobile/tablet) ============
   document.getElementById('btn-toggle-sidebar').addEventListener('click', function () {
     $sidebar.classList.add('open');
     $overlay.classList.add('active');
@@ -893,6 +1373,11 @@
     $overlay.classList.remove('active');
   }
   $overlay.addEventListener('click', closeSidebar);
+
+  // Prevent touch scroll passthrough on overlay (iOS fix)
+  $overlay.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+  }, { passive: false });
 
   // ============ Chapter search ============
   var searchTimer = null;
@@ -1375,32 +1860,7 @@
     document.getElementById('nav-next').addEventListener('click', function () { goToChapter(currentChapterIndex + 1); });
   }
 
-  // ============ Keyboard shortcuts ============
-  document.addEventListener('keydown', function (e) {
-    if (!$reader.classList.contains('active')) return;
-    // Ctrl/Cmd+F to focus chapter search
-    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-      e.preventDefault();
-      $chapterSearch.focus();
-      $chapterSearch.select();
-      // On mobile, also open sidebar so search is visible
-      if (window.innerWidth <= 1024) {
-        $sidebar.classList.add('open');
-        $overlay.classList.add('active');
-      }
-      return;
-    }
-    // Escape clears search and blurs
-    if (e.key === 'Escape' && document.activeElement === $chapterSearch) {
-      $chapterSearch.value = '';
-      filterChapters('');
-      $chapterSearch.blur();
-      return;
-    }
-    if (document.activeElement === $chapterSearch) return;
-    if (e.key === 'ArrowLeft') goToChapter(currentChapterIndex - 1);
-    if (e.key === 'ArrowRight') goToChapter(currentChapterIndex + 1);
-  });
+  // (Keyboard shortcuts defined below, after all features are set up)
 
   // ============ Utils ============
   function escapeHtml(s) {
@@ -1483,9 +1943,16 @@
       var card = document.createElement('div');
       card.className = 'book-card';
       var name = book.name.replace(/\.txt$/i, '');
+      var progress = getBookProgress(book.name);
+      var progressHtml = '';
+      if (progress && progress.chapter !== undefined && progress.total) {
+        var pct = Math.round((progress.chapter + 1) / progress.total * 100);
+        progressHtml = '<div class="book-progress">Ch ' + (progress.chapter + 1) + '/' + progress.total + ' (' + pct + '%)</div>';
+      }
       card.innerHTML =
         '<span class="book-icon">&#128218;</span>' +
         '<div class="book-title">' + escapeHtml(name) + '</div>' +
+        progressHtml +
         '<div class="book-ext">TXT</div>';
       card.addEventListener('click', function () {
         if (book._file && !book._localText) {
@@ -1599,6 +2066,552 @@
     $linksList.innerHTML = '';
     $linksList.appendChild(frag);
   }
+
+  // ============ Reading settings (font family, line height) ============
+  var fontFamily = localStorage.getItem('reader-font') || 'serif';
+  var lineHeight = parseFloat(localStorage.getItem('reader-lh')) || 1.95;
+
+  function applyReaderSettings() {
+    var ff = fontFamily === 'sans'
+      ? '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif'
+      : '"Noto Serif SC", "Source Han Serif CN", Georgia, serif';
+    $readerText.style.fontFamily = ff;
+    $readerText.style.lineHeight = lineHeight;
+    var $sFontVal = document.getElementById('s-font-val');
+    var $sLhVal = document.getElementById('s-lh-val');
+    if ($sFontVal) $sFontVal.textContent = fontSize;
+    if ($sLhVal) $sLhVal.textContent = lineHeight.toFixed(1);
+    // Highlight active font button
+    var $serif = document.getElementById('s-font-serif');
+    var $sans = document.getElementById('s-font-sans');
+    if ($serif) $serif.classList.toggle('active', fontFamily === 'serif');
+    if ($sans) $sans.classList.toggle('active', fontFamily === 'sans');
+    localStorage.setItem('reader-font', fontFamily);
+    localStorage.setItem('reader-lh', lineHeight);
+  }
+
+  applyReaderSettings();
+
+  // Settings panel buttons
+  document.getElementById('s-font-up').addEventListener('click', function () {
+    if (fontSize < 32) { fontSize += 2; applyFontSize(); applyReaderSettings(); }
+  });
+  document.getElementById('s-font-down').addEventListener('click', function () {
+    if (fontSize > 12) { fontSize -= 2; applyFontSize(); applyReaderSettings(); }
+  });
+  document.getElementById('s-font-serif').addEventListener('click', function () {
+    fontFamily = 'serif'; applyReaderSettings();
+  });
+  document.getElementById('s-font-sans').addEventListener('click', function () {
+    fontFamily = 'sans'; applyReaderSettings();
+  });
+  document.getElementById('s-lh-up').addEventListener('click', function () {
+    if (lineHeight < 3.0) { lineHeight = Math.round((lineHeight + 0.2) * 10) / 10; applyReaderSettings(); }
+  });
+  document.getElementById('s-lh-down').addEventListener('click', function () {
+    if (lineHeight > 1.2) { lineHeight = Math.round((lineHeight - 0.2) * 10) / 10; applyReaderSettings(); }
+  });
+  document.getElementById('s-theme').addEventListener('click', function () {
+    document.getElementById('btn-theme').click();
+  });
+
+  // ============ Mobile toolbar panels ============
+  var $settingsPanel = document.getElementById('settings-panel');
+  var $bookmarksPanel = document.getElementById('bookmarks-panel');
+
+  function closeAllPanels() {
+    $settingsPanel.classList.remove('open');
+    $bookmarksPanel.classList.remove('open');
+  }
+
+  document.getElementById('mb-chapters').addEventListener('click', function () {
+    closeAllPanels();
+    $sidebar.classList.add('open');
+    $overlay.classList.add('active');
+  });
+
+  document.getElementById('mb-settings').addEventListener('click', function () {
+    var isOpen = $settingsPanel.classList.contains('open');
+    closeAllPanels();
+    if (!isOpen) { $settingsPanel.classList.add('open'); applyReaderSettings(); }
+  });
+
+  document.getElementById('mb-bookmarks').addEventListener('click', function () {
+    var isOpen = $bookmarksPanel.classList.contains('open');
+    closeAllPanels();
+    if (!isOpen) { $bookmarksPanel.classList.add('open'); renderBookmarks(); }
+  });
+
+  // Close panels when tapping reader content
+  $readerContent.addEventListener('click', function (e) {
+    if (e.target.closest('.chapter-nav')) return;
+    closeAllPanels();
+  });
+
+  // ============ Tap zones (phone prev/next) ============
+  document.getElementById('tap-left').addEventListener('click', function () {
+    goToChapter(currentChapterIndex - 1);
+  });
+  document.getElementById('tap-right').addEventListener('click', function () {
+    goToChapter(currentChapterIndex + 1);
+  });
+
+  // ============ Swipe gestures ============
+  var swipeStartX = 0, swipeStartY = 0, swipeDist = 0, swiping = false;
+
+  $readerContent.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    swipeDist = 0;
+    swiping = true;
+  }, { passive: true });
+
+  $readerContent.addEventListener('touchmove', function (e) {
+    if (!swiping || e.touches.length !== 1) return;
+    var dx = e.touches[0].clientX - swipeStartX;
+    var dy = e.touches[0].clientY - swipeStartY;
+    // Only count as horizontal swipe if mostly horizontal
+    if (Math.abs(dy) > Math.abs(dx)) { swiping = false; return; }
+    swipeDist = dx;
+  }, { passive: true });
+
+  $readerContent.addEventListener('touchend', function () {
+    if (!swiping) return;
+    swiping = false;
+    var threshold = 80;
+    if (swipeDist > threshold) goToChapter(currentChapterIndex - 1);
+    else if (swipeDist < -threshold) goToChapter(currentChapterIndex + 1);
+  });
+
+  // Swipe from left edge to open sidebar
+  var edgeSwipeStartX = 0;
+  document.addEventListener('touchstart', function (e) {
+    if (!$reader.classList.contains('active')) return;
+    if (e.touches[0].clientX < 20) edgeSwipeStartX = e.touches[0].clientX;
+    else edgeSwipeStartX = -1;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function (e) {
+    if (edgeSwipeStartX >= 0 && e.changedTouches[0].clientX > 80) {
+      $sidebar.classList.add('open');
+      $overlay.classList.add('active');
+    }
+    edgeSwipeStartX = -1;
+  });
+
+  // ============ Bookmarks ============
+  function getBookmarks() {
+    try { return JSON.parse(localStorage.getItem('reader-bookmarks') || '{}'); } catch (e) { return {}; }
+  }
+
+  function saveBookmarks(bm) {
+    localStorage.setItem('reader-bookmarks', JSON.stringify(bm));
+  }
+
+  function getBookmarkKey() {
+    return currentBook ? currentBook.name : null;
+  }
+
+  function isCurrentChapterBookmarked() {
+    var key = getBookmarkKey();
+    if (!key) return false;
+    var bm = getBookmarks();
+    return bm[key] && bm[key].includes(currentChapterIndex);
+  }
+
+  function toggleBookmark() {
+    var key = getBookmarkKey();
+    if (!key) return;
+    var bm = getBookmarks();
+    if (!bm[key]) bm[key] = [];
+    var idx = bm[key].indexOf(currentChapterIndex);
+    if (idx >= 0) bm[key].splice(idx, 1);
+    else bm[key].push(currentChapterIndex);
+    saveBookmarks(bm);
+    updateBookmarkBtn();
+  }
+
+  function updateBookmarkBtn() {
+    var $mb = document.getElementById('mb-bookmark');
+    if (isCurrentChapterBookmarked()) {
+      $mb.innerHTML = '&#9733;';
+      $mb.classList.add('active-tool');
+    } else {
+      $mb.innerHTML = '&#9734;';
+      $mb.classList.remove('active-tool');
+    }
+  }
+
+  document.getElementById('mb-bookmark').addEventListener('click', function () {
+    closeAllPanels();
+    toggleBookmark();
+  });
+
+  function renderBookmarks() {
+    var $list = document.getElementById('bookmarks-list');
+    var key = getBookmarkKey();
+    var bm = getBookmarks();
+    var arr = (key && bm[key]) ? bm[key].sort(function (a, b) { return a - b; }) : [];
+    if (arr.length === 0) {
+      $list.innerHTML = '<div class="bookmarks-empty">No bookmarks yet. Tap &#9734; to bookmark a chapter.</div>';
+      return;
+    }
+    var html = '';
+    arr.forEach(function (chIdx) {
+      var title = (chapters[chIdx] && chapters[chIdx].title) || ('Chapter ' + (chIdx + 1));
+      html += '<div class="bookmark-item" data-ch="' + chIdx + '">' +
+        '<span class="bm-title">' + escapeHtml(title) + '</span>' +
+        '<button class="bm-del" data-del="' + chIdx + '">&times;</button></div>';
+    });
+    $list.innerHTML = html;
+  }
+
+  document.getElementById('bookmarks-list').addEventListener('click', function (e) {
+    var del = e.target.closest('[data-del]');
+    if (del) {
+      var key = getBookmarkKey();
+      var bm = getBookmarks();
+      var chIdx = parseInt(del.getAttribute('data-del'), 10);
+      if (bm[key]) {
+        bm[key] = bm[key].filter(function (i) { return i !== chIdx; });
+        saveBookmarks(bm);
+        renderBookmarks();
+        updateBookmarkBtn();
+      }
+      return;
+    }
+    var item = e.target.closest('.bookmark-item');
+    if (item) {
+      var ch = parseInt(item.getAttribute('data-ch'), 10);
+      $bookmarksPanel.classList.remove('open');
+      goToChapter(ch);
+    }
+  });
+
+  // ============ In-chapter text search ============
+  var $textSearchBar = document.getElementById('text-search-bar');
+  var $textSearchInput = document.getElementById('text-search-input');
+  var $textSearchCount = document.getElementById('text-search-count');
+  var textSearchMatches = [];
+  var textSearchIdx = -1;
+
+  function openTextSearch() {
+    $textSearchBar.classList.add('open');
+    $textSearchInput.focus();
+    $textSearchInput.select();
+    closeAllPanels();
+  }
+
+  function closeTextSearch() {
+    $textSearchBar.classList.remove('open');
+    $textSearchInput.value = '';
+    $textSearchCount.textContent = '';
+    clearSearchHighlights();
+    textSearchMatches = [];
+    textSearchIdx = -1;
+  }
+
+  function clearSearchHighlights() {
+    var marks = $readerText.querySelectorAll('mark.search-hl');
+    marks.forEach(function (m) {
+      var parent = m.parentNode;
+      parent.replaceChild(document.createTextNode(m.textContent), m);
+      parent.normalize();
+    });
+  }
+
+  function doTextSearch(query) {
+    clearSearchHighlights();
+    textSearchMatches = [];
+    textSearchIdx = -1;
+    if (!query.trim()) { $textSearchCount.textContent = ''; return; }
+
+    var walker = document.createTreeWalker($readerText, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    var qLower = query.toLowerCase();
+    nodes.forEach(function (node) {
+      var text = node.textContent;
+      var lower = text.toLowerCase();
+      var idx = lower.indexOf(qLower);
+      if (idx < 0) return;
+
+      var parts = [];
+      var last = 0;
+      while (idx >= 0) {
+        if (idx > last) parts.push(document.createTextNode(text.slice(last, idx)));
+        var mark = document.createElement('mark');
+        mark.className = 'search-hl';
+        mark.textContent = text.slice(idx, idx + query.length);
+        parts.push(mark);
+        textSearchMatches.push(mark);
+        last = idx + query.length;
+        idx = lower.indexOf(qLower, last);
+      }
+      if (last < text.length) parts.push(document.createTextNode(text.slice(last)));
+
+      var parent = node.parentNode;
+      parts.forEach(function (p) { parent.insertBefore(p, node); });
+      parent.removeChild(node);
+    });
+
+    $textSearchCount.textContent = textSearchMatches.length > 0 ? '0/' + textSearchMatches.length : 'No results';
+    if (textSearchMatches.length > 0) navigateSearchMatch(0);
+  }
+
+  function navigateSearchMatch(idx) {
+    if (textSearchMatches.length === 0) return;
+    if (textSearchMatches[textSearchIdx]) textSearchMatches[textSearchIdx].classList.remove('current');
+    textSearchIdx = ((idx % textSearchMatches.length) + textSearchMatches.length) % textSearchMatches.length;
+    textSearchMatches[textSearchIdx].classList.add('current');
+    textSearchMatches[textSearchIdx].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    $textSearchCount.textContent = (textSearchIdx + 1) + '/' + textSearchMatches.length;
+  }
+
+  var textSearchTimer = null;
+  $textSearchInput.addEventListener('input', function () {
+    clearTimeout(textSearchTimer);
+    var val = this.value;
+    textSearchTimer = setTimeout(function () { doTextSearch(val); }, 200);
+  });
+
+  document.getElementById('text-search-prev').addEventListener('click', function () { navigateSearchMatch(textSearchIdx - 1); });
+  document.getElementById('text-search-next').addEventListener('click', function () { navigateSearchMatch(textSearchIdx + 1); });
+  document.getElementById('text-search-close').addEventListener('click', closeTextSearch);
+  document.getElementById('mb-search').addEventListener('click', openTextSearch);
+
+  // ============ Auto-scroll ============
+  var autoScrollInterval = null;
+  var autoScrollSpeed = 1; // pixels per tick
+  var $autoScrollBadge = document.getElementById('autoscroll-badge');
+
+  function startAutoScroll() {
+    stopAutoScroll();
+    autoScrollInterval = setInterval(function () {
+      $readerContent.scrollTop += autoScrollSpeed;
+      // Stop at bottom
+      if ($readerContent.scrollTop >= $readerContent.scrollHeight - $readerContent.clientHeight) {
+        stopAutoScroll();
+      }
+    }, 50);
+    $autoScrollBadge.classList.add('visible');
+    document.getElementById('autoscroll-speed').textContent = autoScrollSpeed + 'x';
+    document.getElementById('s-autoscroll').classList.add('active');
+  }
+
+  function stopAutoScroll() {
+    clearInterval(autoScrollInterval);
+    autoScrollInterval = null;
+    $autoScrollBadge.classList.remove('visible');
+    document.getElementById('s-autoscroll').classList.remove('active');
+  }
+
+  function toggleAutoScroll() {
+    if (autoScrollInterval) stopAutoScroll();
+    else startAutoScroll();
+  }
+
+  document.getElementById('s-autoscroll').addEventListener('click', toggleAutoScroll);
+  $autoScrollBadge.addEventListener('click', function () {
+    autoScrollSpeed = autoScrollSpeed >= 5 ? 1 : autoScrollSpeed + 1;
+    document.getElementById('autoscroll-speed').textContent = autoScrollSpeed + 'x';
+  });
+
+  // Stop auto-scroll on user touch/scroll
+  $readerContent.addEventListener('touchstart', function () { if (autoScrollInterval) stopAutoScroll(); }, { passive: true });
+
+  // ============ Fullscreen ============
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(function () {});
+    } else {
+      var el = document.documentElement;
+      (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el);
+    }
+  }
+
+  document.getElementById('s-fullscreen').addEventListener('click', toggleFullscreen);
+
+  // Double-tap to toggle fullscreen
+  var lastTapTime = 0;
+  $readerContent.addEventListener('touchend', function (e) {
+    var now = Date.now();
+    if (now - lastTapTime < 300 && e.changedTouches.length === 1) {
+      e.preventDefault();
+      toggleFullscreen();
+    }
+    lastTapTime = now;
+  });
+
+  // ============ Chapter quick-jump ============
+  function promptChapterJump() {
+    var input = prompt('Jump to chapter number (1-' + chapters.length + '):');
+    if (input === null) return;
+    var num = parseInt(input, 10);
+    if (num >= 1 && num <= chapters.length) goToChapter(num - 1);
+  }
+
+  // ============ Reading progress on book cards ============
+  function getBookProgress(bookName) {
+    try {
+      var data = JSON.parse(localStorage.getItem('reader-position'));
+      if (data && data.book === bookName) return data;
+    } catch (e) {}
+    // Also check per-book saved progress
+    try {
+      return JSON.parse(localStorage.getItem('reader-progress-' + bookName));
+    } catch (e) { return null; }
+  }
+
+  // Save per-book progress (separate from current position)
+  var origSaveReadingPosition = saveReadingPosition;
+  saveReadingPosition = function () {
+    origSaveReadingPosition();
+    if (currentBook && chapters.length > 0) {
+      localStorage.setItem('reader-progress-' + currentBook.name, JSON.stringify({
+        book: currentBook.name,
+        chapter: currentChapterIndex,
+        total: chapters.length
+      }));
+    }
+  };
+
+  // ============ Keep screen awake ============
+  var wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (e) {}
+  }
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(function(){}); wakeLock = null; }
+  }
+
+  // ============ Enhanced keyboard shortcuts ============
+  var $shortcutsOverlay = document.getElementById('shortcuts-overlay');
+
+  // Replace the old keydown handler
+  document.removeEventListener('keydown', arguments.callee);
+
+  document.addEventListener('keydown', function (e) {
+    // Close shortcuts overlay
+    if ($shortcutsOverlay.classList.contains('open')) {
+      $shortcutsOverlay.classList.remove('open');
+      e.preventDefault();
+      return;
+    }
+
+    // Close text search on Escape
+    if (e.key === 'Escape' && $textSearchBar.classList.contains('open')) {
+      closeTextSearch();
+      e.preventDefault();
+      return;
+    }
+
+    if (!$reader.classList.contains('active')) return;
+
+    // Ctrl/Cmd+F — chapter search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      $chapterSearch.focus();
+      $chapterSearch.select();
+      if (window.innerWidth <= 1024) {
+        $sidebar.classList.add('open');
+        $overlay.classList.add('active');
+      }
+      return;
+    }
+
+    // Ctrl/Cmd+G — in-text search
+    if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+      e.preventDefault();
+      openTextSearch();
+      return;
+    }
+
+    // Ctrl/Cmd+J — jump to chapter
+    if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
+      e.preventDefault();
+      promptChapterJump();
+      return;
+    }
+
+    // Escape — close sidebar/search
+    if (e.key === 'Escape') {
+      if (document.activeElement === $chapterSearch) {
+        $chapterSearch.value = '';
+        filterChapters('');
+        $chapterSearch.blur();
+      }
+      closeSidebar();
+      closeAllPanels();
+      return;
+    }
+
+    if (document.activeElement.tagName === 'INPUT') return;
+
+    // ? — show shortcuts
+    if (e.key === '?') { $shortcutsOverlay.classList.add('open'); return; }
+
+    // B — toggle bookmark
+    if (e.key === 'b' || e.key === 'B') { toggleBookmark(); return; }
+
+    // F — fullscreen
+    if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); return; }
+
+    // Arrow keys — chapter nav
+    if (e.key === 'ArrowLeft') goToChapter(currentChapterIndex - 1);
+    if (e.key === 'ArrowRight') goToChapter(currentChapterIndex + 1);
+  });
+
+  $shortcutsOverlay.addEventListener('click', function (e) {
+    if (e.target === $shortcutsOverlay) $shortcutsOverlay.classList.remove('open');
+  });
+
+  // ============ Pinch to zoom font size ============
+  var pinchStartDist = 0, pinchFontStart = 0;
+  $readerContent.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      pinchStartDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchFontStart = fontSize;
+    }
+  }, { passive: true });
+
+  $readerContent.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && pinchStartDist > 0) {
+      var dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      var scale = dist / pinchStartDist;
+      var newSize = Math.round(pinchFontStart * scale);
+      newSize = Math.max(12, Math.min(32, newSize));
+      if (newSize !== fontSize && newSize % 2 === 0) {
+        fontSize = newSize;
+        applyFontSize();
+        applyReaderSettings();
+      }
+    }
+  }, { passive: true });
+
+  $readerContent.addEventListener('touchend', function () { pinchStartDist = 0; }, { passive: true });
+
+  // ============ Update goToChapter hook ============
+  var origGoToChapter = goToChapter;
+  goToChapter = function (idx) {
+    origGoToChapter(idx);
+    updateBookmarkBtn();
+    closeTextSearch();
+    stopAutoScroll();
+    requestWakeLock();
+  };
 
   // ============ Init ============
   loadBooks();
