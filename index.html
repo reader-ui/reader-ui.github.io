@@ -1763,7 +1763,14 @@
       splits = extractNumberedChapters(text, candidates);
     }
 
-    // --- Strategy 3: "Chapter N" style (English) ---
+    // --- Strategy 3: Numbered with space, no dot: "1 Title" ---
+    if (splits.length === 0) {
+      var candidates2 = collectMatches(text, /^(\d+\s+[^\n]*)/gm);
+      candidates2.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
+      splits = extractNumberedChapters(text, candidates2);
+    }
+
+    // --- Strategy 4: "Chapter N" style (English) ---
     if (splits.length === 0) {
       splits = collectMatches(text, /^(Chapter\s+\d+[^\n]*)/gim);
     }
