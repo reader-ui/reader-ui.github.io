@@ -1753,24 +1753,31 @@
     // Highest confidence — very unlikely to be false positives
     splits = collectMatches(text, /^(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
 
-    // --- Strategy 2: Numbered chapters (universal) ---
+    // --- Strategy 2: Numbered with tilde separator (1~Title) ---
+    if (splits.length === 0) {
+      var candidatesTilde = collectMatches(text, /^\s*(\d+~[^\n]*)/gm);
+      candidatesTilde.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
+      splits = extractNumberedChapters(text, candidatesTilde);
+    }
+
+    // --- Strategy 3: Numbered chapters (universal) ---
     // Single regex catches ALL numbered formats:
     //   1.Title  1. Title  1."Title"  1."Title"  1.《Title》  1.  1、Title  1．Title
     if (splits.length === 0) {
-      var candidates = collectMatches(text, /^\s*(\d+[.\u3001\uff0e~][^\n]*)/gm);
+      var candidates = collectMatches(text, /^\s*(\d+[.\u3001\uff0e][^\n]*)/gm);
       // Trim trailing whitespace from titles so bare "1. " becomes "1."
       candidates.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
       splits = extractNumberedChapters(text, candidates);
     }
 
-    // --- Strategy 3: Numbered with space, no dot: "1 Title" ---
+    // --- Strategy 4: Numbered with space, no dot: "1 Title" ---
     if (splits.length === 0) {
       var candidates2 = collectMatches(text, /^(\d+\s+[^\n]*)/gm);
       candidates2.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
       splits = extractNumberedChapters(text, candidates2);
     }
 
-    // --- Strategy 4: "Chapter N" style (English) ---
+    // --- Strategy 5: "Chapter N" style (English) ---
     if (splits.length === 0) {
       splits = collectMatches(text, /^(Chapter\s+\d+[^\n]*)/gim);
     }
