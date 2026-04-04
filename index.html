@@ -1757,7 +1757,7 @@
     // Single regex catches ALL numbered formats:
     //   1.Title  1. Title  1."Title"  1."Title"  1.《Title》  1.  1、Title  1．Title
     if (splits.length === 0) {
-      var candidates = collectMatches(text, /^(\d+[.\u3001\uff0e~][^\n]*)/gm);
+      var candidates = collectMatches(text, /^\s*(\d+[.\u3001\uff0e~][^\n]*)/gm);
       // Trim trailing whitespace from titles so bare "1. " becomes "1."
       candidates.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
       splits = extractNumberedChapters(text, candidates);
