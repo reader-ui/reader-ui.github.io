@@ -1735,6 +1735,13 @@
         }
         chain.push(candidates[i]);
         expectedNext = num + 1;
+      } else if (num === 1 && chain.length >= 3) {
+        // Number reset (new volume/section after 尾声/终章 etc.)
+        var resetGap = candidates[i].index - chain[chain.length - 1].index;
+        if (resetGap >= MIN_GAP) {
+          chain.push(candidates[i]);
+          expectedNext = 2;
+        }
       }
       // else: number too far ahead or behind — skip (in-text list item)
     }
