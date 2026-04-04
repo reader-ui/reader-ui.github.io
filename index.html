@@ -1753,11 +1753,13 @@
     // Highest confidence — very unlikely to be false positives
     splits = collectMatches(text, /^(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
 
-    // --- Strategy 2: Numbered with tilde separator (1~Title) ---
+    // --- Strategy 2: Tilde separator (1~Title, 序章~Title, 终幕~Title, etc.) ---
+    // Tilde is distinctive enough to use all matches directly without chain filtering.
+    // Supports resetting chapter numbers across volumes.
     if (splits.length === 0) {
-      var candidatesTilde = collectMatches(text, /^\s*(\d+~[^\n]*)/gm);
-      candidatesTilde.forEach(function (c) { c.title = c.title.replace(/\s+$/, ''); });
-      splits = extractNumberedChapters(text, candidatesTilde);
+      var tildeCandidates = collectMatches(text, /^\s*(\S+~[^\n]*)/gm);
+      tildeCandidates = tildeCandidates.filter(function (s) { return s.title.length <= 100; });
+      if (tildeCandidates.length >= 3) splits = tildeCandidates;
     }
 
     // --- Strategy 3: Numbered chapters (universal) ---
