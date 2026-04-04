@@ -1749,9 +1749,9 @@
     chapters = [];
     var splits = [];
 
-    // --- Strategy 1: Chinese chapter markers (第X章, 番外：, 序章：, etc.) ---
+    // --- Strategy 1: Chinese chapter markers (第X章) ---
     // Highest confidence — very unlikely to be false positives
-    splits = collectMatches(text, /^(?:第[零一二三四五六七八九十百千万0-9]+节\s*)?((?:第[零一二三四五六七八九十百千万0-9]+章|(?:番外|序章|终章|终幕|尾声|楔子|后记|前言)[：:])[^\n]*)/gm);
+    splits = collectMatches(text, /^(?:第[零一二三四五六七八九十百千万0-9]+节\s*)?(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
 
     // --- Strategy 2: Numbered chapters with dot/punctuation ---
     //   1.Title  1. Title  1."Title"  1.《Title》  1、Title  1．Title
@@ -1787,6 +1787,25 @@
       var candidates3 = collectMatches(text, /^([零一二三四五六七八九十百千万]+\s+[^\n]*)/gm);
       candidates3 = candidates3.filter(function (s) { return s.title.length <= 100; });
       if (candidates3.length >= 3) splits = candidates3;
+    }
+
+    // --- Merge supplementary markers (番外：, 序章：, 终章：, etc.) ---
+    // These can coexist with any primary strategy, so always merge them in.
+    if (splits.length > 0) {
+      var extras = collectMatches(text, /^((?:番外|序章|终章|终幕|尾声|楔子|后记|前言)[：:][^\n]*)/gm);
+      if (extras.length > 0) {
+        var existingIndices = {};
+        splits.forEach(function (s) { existingIndices[s.index] = true; });
+        extras.forEach(function (e) {
+          if (!existingIndices[e.index]) splits.push(e);
+        });
+        splits.sort(function (a, b) { return a.index - b.index; });
+      }
+    }
+
+    // --- Fallback: supplementary markers only ---
+    if (splits.length === 0) {
+      splits = collectMatches(text, /^((?:番外|序章|终章|终幕|尾声|楔子|后记|前言)[：:][^\n]*)/gm);
     }
 
     // --- No chapters detected — treat whole text as one chapter ---
