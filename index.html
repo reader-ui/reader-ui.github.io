@@ -1758,7 +1758,7 @@
 
     // --- Strategy 1: Chinese chapter markers (第X章) ---
     // Highest confidence — very unlikely to be false positives
-    splits = collectMatches(text, /^(?:第[零一二三四五六七八九十百千万0-9]+节\s*)?(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
+    splits = collectMatches(text, /^\s*(?:第[零一二三四五六七八九十百千万0-9]+节\s*)?(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
 
     // --- Strategy 2: Numbered chapters with dot/punctuation ---
     //   1.Title  1. Title  1."Title"  1.《Title》  1、Title  1．Title
