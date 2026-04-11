@@ -1756,6 +1756,11 @@
     chapters = [];
     var splits = [];
 
+    // --- Special case: 网游小睡魔 uses 第X节 as chapters ---
+    if (currentBook && currentBook.name.indexOf('网游小睡魔') >= 0) {
+      splits = collectMatches(text, /^\s*(第[零一二三四五六七八九十百千万0-9]+节[^\n]*)/gm);
+    } else {
+
     // --- Strategy 1: Chinese chapter markers (第X章, with optional 第X节 prefix) ---
     // Highest confidence — very unlikely to be false positives
     splits = collectMatches(text, /^\s*(?:第[零一二三四五六七八九十百千万0-9]+节\s*)?(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
@@ -1815,10 +1820,7 @@
       splits = collectMatches(text, /^((?:番外|序章|终章|终幕|尾声|楔子|后记|前言)[：:][^\n]*)/gm);
     }
 
-    // --- Special case: 网游小睡魔 uses 第X节 as chapters ---
-    if (splits.length === 0 && currentBook && currentBook.name.indexOf('网游小睡魔') >= 0) {
-      splits = collectMatches(text, /^\s*(第[零一二三四五六七八九十百千万0-9]+节[^\n]*)/gm);
-    }
+    } // end else (non-网游小睡魔 books)
 
     // --- No chapters detected — treat whole text as one chapter ---
     if (splits.length === 0) {
