@@ -1789,7 +1789,7 @@
       var expect = 1;
       for (var di = 0; di < allDot.length; di++) {
         var dn = parseInt(allDot[di].title, 10);
-        if (dn === expect) {
+        if (dn === expect || (dn > expect && dn <= expect + 20)) {
           splits.push(allDot[di]);
           expect = dn + 1;
         }
