@@ -1756,9 +1756,21 @@
     chapters = [];
     var splits = [];
 
-    // --- Special case: 网游小睡魔 uses 第X节 as chapters ---
+    // --- Special cases for specific books ---
     if (currentBook && currentBook.name.indexOf('网游小睡魔') >= 0) {
+      // 网游小睡魔 uses 第X节 as chapters
       splits = collectMatches(text, /^\s*(第[零一二三四五六七八九十百千万0-9]+节[^\n]*)/gm);
+    } else if (currentBook && currentBook.name.indexOf('重生龙骑士') >= 0) {
+      // 重生龙骑士 uses strict N. format — collect in order, no duplicates
+      var allDot = collectMatches(text, /^(\d+\.[^\n]*)/gm);
+      var expect = 1;
+      for (var di = 0; di < allDot.length; di++) {
+        var dn = parseInt(allDot[di].title, 10);
+        if (dn === expect) {
+          splits.push(allDot[di]);
+          expect = dn + 1;
+        }
+      }
     } else {
 
     // --- Strategy 1: Chinese chapter markers (第X章, with optional 第X节 prefix) ---
