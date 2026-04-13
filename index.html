@@ -1603,6 +1603,11 @@
       }
 
       books = data.filter(f => f.name.endsWith('.txt'));
+      // Special case: 重生龙骑士 is split into parts in its own subfolder
+      var dragonDir = data.find(f => f.type === 'dir' && f.name.indexOf('重生龙骑士') >= 0);
+      if (dragonDir) {
+        books.push({ name: dragonDir.name + '.txt', _multipart: true, _dirName: dragonDir.name, _info: info });
+      }
       renderBookGrid();
 
       // Priority 1: URL route (e.g. /repo/books/BookName/3)
@@ -1662,6 +1667,24 @@
       var text;
       if (book._localText) {
         text = book._localText;
+      } else if (book._multipart) {
+        // Fetch parts from subfolder and concatenate
+        var partsInfo = book._info;
+        var partsList = null;
+        for (var br of ['main', 'master']) {
+          var pUrl = 'https://api.github.com/repos/' + partsInfo.owner + '/' + partsInfo.repo + '/contents/books/' + encodeURIComponent(book._dirName) + '?ref=' + br;
+          var pRes = await fetch(pUrl);
+          if (pRes.ok) { partsList = await pRes.json(); break; }
+        }
+        if (!partsList) throw new Error('Could not load book parts');
+        var partFiles = partsList.filter(f => f.name.endsWith('.txt')).sort(function (a, b) { return a.name.localeCompare(b.name); });
+        var parts = [];
+        for (var pi = 0; pi < partFiles.length; pi++) {
+          var pr = await fetch(partFiles[pi].download_url);
+          if (!pr.ok) throw new Error('Failed to load part ' + partFiles[pi].name);
+          parts.push(await pr.text());
+        }
+        text = parts.join('\n');
       } else {
         var res = await fetch(book.download_url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
