@@ -1794,6 +1794,17 @@
           expect = dn + 1;
         }
       }
+    } else if (currentBook && currentBook.name.indexOf('最强副职业') >= 0) {
+      // 最强副职业 uses "N Title" format (number + space + title)
+      var allSpace = collectMatches(text, /^(\d+\s+[^\n]*)/gm);
+      var expect2 = 1;
+      for (var si = 0; si < allSpace.length; si++) {
+        var sn = parseInt(allSpace[si].title, 10);
+        if (sn === expect2 || (sn > expect2 && sn <= expect2 + 20)) {
+          splits.push(allSpace[si]);
+          expect2 = sn + 1;
+        }
+      }
     } else {
 
     // --- Strategy 1: Chinese chapter markers (第X章, with optional 第X节 prefix) ---
