@@ -1595,7 +1595,8 @@
     try {
       // Try default branch (main), fallback to master
       let data = await fetchBookList(info, 'main');
-      if (!data) data = await fetchBookList(info, 'master');
+      let usedBranch = 'main';
+      if (!data) { data = await fetchBookList(info, 'master'); usedBranch = 'master'; }
       if (!data) {
         $loading.style.display = 'none';
         $welcome.style.display = '';
@@ -1618,7 +1619,7 @@
       renderBookGrid();
       for (var cdi = 0; cdi < categoryDirs.length; cdi++) {
         (function (catDir) {
-          var catUrl = 'https://api.github.com/repos/' + info.owner + '/' + info.repo + '/contents/books/' + encodeURIComponent(catDir.name) + '?ref=' + (data === null ? 'master' : 'main');
+          var catUrl = 'https://api.github.com/repos/' + info.owner + '/' + info.repo + '/contents/books/' + encodeURIComponent(catDir.name) + '?ref=' + usedBranch;
           fetch(catUrl).then(function (r) { return r.ok ? r.json() : null; }).then(function (catData) {
             if (!catData) return;
             var catBooks = catData.filter(function (f) { return f.name.endsWith('.txt'); });
