@@ -1603,12 +1603,33 @@
       }
 
       books = data.filter(f => f.name.endsWith('.txt'));
-      // Special case: 重生龙骑士 is split into parts in its own subfolder
-      var dragonDir = data.find(f => f.type === 'dir' && f.name.indexOf('重生龙骑士') >= 0);
-      if (dragonDir) {
-        books.push({ name: dragonDir.name + '.txt', _multipart: true, _dirName: dragonDir.name, _info: info });
+      // Subfolders: 重生龙骑士 is multi-part, others are categories
+      var subDirs = data.filter(f => f.type === 'dir');
+      var categoryDirs = [];
+      for (var sdi = 0; sdi < subDirs.length; sdi++) {
+        var sd = subDirs[sdi];
+        if (sd.name.indexOf('重生龙骑士') >= 0) {
+          books.push({ name: sd.name + '.txt', _multipart: true, _dirName: sd.name, _info: info });
+        } else {
+          categoryDirs.push(sd);
+        }
       }
+      // Render books we have so far, then load category folders asynchronously
       renderBookGrid();
+      for (var cdi = 0; cdi < categoryDirs.length; cdi++) {
+        (function (catDir) {
+          var catUrl = 'https://api.github.com/repos/' + info.owner + '/' + info.repo + '/contents/books/' + encodeURIComponent(catDir.name) + '?ref=' + (data === null ? 'master' : 'main');
+          fetch(catUrl).then(function (r) { return r.ok ? r.json() : null; }).then(function (catData) {
+            if (!catData) return;
+            var catBooks = catData.filter(function (f) { return f.name.endsWith('.txt'); });
+            catBooks.forEach(function (cb) {
+              cb._category = catDir.name;
+            });
+            books = books.concat(catBooks);
+            renderBookGrid();
+          }).catch(function () {});
+        })(categoryDirs[cdi]);
+      }
 
       // Priority 1: URL route (e.g. /repo/books/BookName/3)
       var route = parseUrlRoute();
@@ -2037,38 +2058,55 @@
     handleLocalFiles(e.dataTransfer.files);
   });
 
+  function makeBookCard(book) {
+    var card = document.createElement('div');
+    card.className = 'book-card';
+    var name = book.name.replace(/\.txt$/i, '');
+    var progress = getBookProgress(book.name);
+    var progressHtml = '';
+    if (progress && progress.chapter !== undefined && progress.total) {
+      var pct = Math.round((progress.chapter + 1) / progress.total * 100);
+      progressHtml = '<div class="book-progress">Ch ' + (progress.chapter + 1) + '/' + progress.total + ' (' + pct + '%)</div>';
+    }
+    card.innerHTML =
+      '<span class="book-icon">&#128218;</span>' +
+      '<div class="book-title">' + escapeHtml(name) + '</div>' +
+      progressHtml +
+      '<div class="book-ext">TXT</div>';
+    card.addEventListener('click', function () {
+      if (book._file && !book._localText) {
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          book._localText = normalizeText(ev.target.result);
+          book.download_url = null;
+          openBook(book);
+        };
+        reader.readAsText(book._file, 'UTF-8');
+      } else {
+        openBook(book);
+      }
+    });
+    return card;
+  }
+
   function renderBookGrid() {
     $bookGrid.innerHTML = '';
-    books.forEach(function (book) {
-      var card = document.createElement('div');
-      card.className = 'book-card';
-      var name = book.name.replace(/\.txt$/i, '');
-      var progress = getBookProgress(book.name);
-      var progressHtml = '';
-      if (progress && progress.chapter !== undefined && progress.total) {
-        var pct = Math.round((progress.chapter + 1) / progress.total * 100);
-        progressHtml = '<div class="book-progress">Ch ' + (progress.chapter + 1) + '/' + progress.total + ' (' + pct + '%)</div>';
+    var uncategorized = books.filter(function (b) { return !b._category; });
+    var byCategory = {};
+    books.forEach(function (b) {
+      if (b._category) {
+        if (!byCategory[b._category]) byCategory[b._category] = [];
+        byCategory[b._category].push(b);
       }
-      card.innerHTML =
-        '<span class="book-icon">&#128218;</span>' +
-        '<div class="book-title">' + escapeHtml(name) + '</div>' +
-        progressHtml +
-        '<div class="book-ext">TXT</div>';
-      card.addEventListener('click', function () {
-        if (book._file && !book._localText) {
-          // Local file not yet read — read it first
-          var reader = new FileReader();
-          reader.onload = function (ev) {
-            book._localText = normalizeText(ev.target.result);
-            book.download_url = null;
-            openBook(book);
-          };
-          reader.readAsText(book._file, 'UTF-8');
-        } else {
-          openBook(book);
-        }
-      });
-      $bookGrid.appendChild(card);
+    });
+    uncategorized.forEach(function (book) { $bookGrid.appendChild(makeBookCard(book)); });
+    Object.keys(byCategory).sort().forEach(function (cat) {
+      var header = document.createElement('div');
+      header.className = 'category-header';
+      header.textContent = cat;
+      header.style.cssText = 'grid-column:1/-1;font-size:18px;font-weight:700;color:var(--accent);margin:24px 0 4px;padding:8px 4px;border-bottom:2px solid var(--border);font-family:"Noto Serif SC",Georgia,serif;';
+      $bookGrid.appendChild(header);
+      byCategory[cat].forEach(function (book) { $bookGrid.appendChild(makeBookCard(book)); });
     });
   }
 
