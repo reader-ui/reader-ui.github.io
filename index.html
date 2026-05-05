@@ -1604,12 +1604,14 @@
       }
 
       books = data.filter(f => f.name.endsWith('.txt'));
-      // Subfolders: 重生龙骑士 is multi-part, others are categories
+      // Subfolders: known multi-part books, others are categories
+      var multipartBooks = ['重生龙骑士', '当成为小姐姐之后'];
       var subDirs = data.filter(f => f.type === 'dir');
       var categoryDirs = [];
       for (var sdi = 0; sdi < subDirs.length; sdi++) {
         var sd = subDirs[sdi];
-        if (sd.name.indexOf('重生龙骑士') >= 0) {
+        var isMultipart = multipartBooks.some(function (m) { return sd.name.indexOf(m) >= 0; });
+        if (isMultipart) {
           books.push({ name: sd.name + '.txt', _multipart: true, _dirName: sd.name, _info: info });
         } else {
           categoryDirs.push(sd);
