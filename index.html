@@ -1827,6 +1827,10 @@
           expect2 = sn + 1;
         }
       }
+    } else if (currentBook && currentBook.name.indexOf('魔法少女？被坑成的啦') >= 0) {
+      // 魔法少女？被坑成的啦 uses "第X卷：VolumeName : 第Y章：Title" format
+      // Capture only the 第Y章 part as the title, stripping the volume prefix
+      splits = collectMatches(text, /^第[零一二三四五六七八九十百千万0-9]+卷[^\n]*?\s+[：:]\s+(第[零一二三四五六七八九十百千万0-9]+章[^\n]*)/gm);
     } else {
 
     // --- Strategy 1: Chinese chapter markers (第X章, with optional 第X节 prefix) ---
