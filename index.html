@@ -1151,6 +1151,7 @@
   }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -1174,10 +1175,10 @@
   <div class="tab-panel active" id="tab-books">
     <div class="book-grid" id="book-grid"></div>
     <div class="local-upload">
-      <span class="local-upload-label">Or load .txt files from your device</span>
+      <span class="local-upload-label">Or load .txt / .epub files from your device</span>
       <div class="drop-zone" id="drop-zone">
-        Drop .txt files here or click to browse
-        <input type="file" id="file-input" accept=".txt" multiple>
+        Drop .txt or .epub files here or click to browse
+        <input type="file" id="file-input" accept=".txt,.epub" multiple>
       </div>
     </div>
   </div>
@@ -1513,7 +1514,7 @@
   var suppressPopState = false;
 
   function getBookSlug(bookName) {
-    return bookName.replace(/\.txt$/i, '');
+    return bookName.replace(/\.(txt|epub)$/i, '');
   }
 
   function updateUrl(bookName, chapterIdx, replace) {
@@ -1603,7 +1604,7 @@
         return;
       }
 
-      books = data.filter(f => f.name.endsWith('.txt'));
+      books = data.filter(f => f.name.endsWith('.txt') || f.name.endsWith('.epub'));
       // Subfolders: known multi-part books, others are categories
       var multipartBooks = ['重生龙骑士', '当成为小姐姐之后'];
       var subDirs = data.filter(f => f.type === 'dir');
@@ -1624,7 +1625,7 @@
           var catUrl = 'https://api.github.com/repos/' + info.owner + '/' + info.repo + '/contents/books/' + encodeURIComponent(catDir.name) + '?ref=' + usedBranch;
           fetch(catUrl).then(function (r) { return r.ok ? r.json() : null; }).then(function (catData) {
             if (!catData) return;
-            var catBooks = catData.filter(function (f) { return f.name.endsWith('.txt'); });
+            var catBooks = catData.filter(function (f) { return f.name.endsWith('.txt') || f.name.endsWith('.epub'); });
             catBooks.forEach(function (cb) {
               cb._category = catDir.name;
             });
@@ -1676,47 +1677,133 @@
   // ============ Render book grid ============
   // (defined below, after local file logic)
 
+  // ============ EPUB parsing ============
+  async function parseEpub(arrayBuffer) {
+    if (typeof JSZip === 'undefined') throw new Error('JSZip library not loaded');
+    var zip = await JSZip.loadAsync(arrayBuffer);
+
+    // 1. Read container.xml to find OPF path
+    var containerFile = zip.file('META-INF/container.xml');
+    if (!containerFile) throw new Error('Invalid EPUB: missing container.xml');
+    var containerXml = await containerFile.async('string');
+    var rootfileMatch = containerXml.match(/<rootfile[^>]+full-path=["']([^"']+)["']/);
+    if (!rootfileMatch) throw new Error('Invalid EPUB: no rootfile');
+    var opfPath = rootfileMatch[1];
+    var opfDir = opfPath.indexOf('/') >= 0 ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+
+    // 2. Parse OPF: manifest (id → href) and spine (ordered idrefs)
+    var opfXml = await zip.file(opfPath).async('string');
+    var manifest = {};
+    var manifestRe = /<item\s+([^>]+)\/?>/g;
+    var m;
+    while ((m = manifestRe.exec(opfXml)) !== null) {
+      var attrs = m[1];
+      var idM = attrs.match(/id=["']([^"']+)["']/);
+      var hrefM = attrs.match(/href=["']([^"']+)["']/);
+      if (idM && hrefM) manifest[idM[1]] = hrefM[1];
+    }
+    var spineRe = /<itemref\s+[^>]*idref=["']([^"']+)["']/g;
+    var spine = [];
+    while ((m = spineRe.exec(opfXml)) !== null) spine.push(m[1]);
+
+    // 3. For each spine item: load XHTML, extract title + text
+    var result = [];
+    for (var i = 0; i < spine.length; i++) {
+      var href = manifest[spine[i]];
+      if (!href) continue;
+      var fullPath = opfDir + href;
+      var f = zip.file(fullPath);
+      if (!f) continue;
+      var html = await f.async('string');
+
+      // Extract title: <title> → first <h1>/<h2>/<h3> → fallback
+      var title = '';
+      var titleM = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (titleM) title = titleM[1].replace(/<[^>]+>/g, '').trim();
+      if (!title) {
+        var hM = html.match(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/i);
+        if (hM) title = hM[1].replace(/<[^>]+>/g, '').trim();
+      }
+      if (!title) title = 'Chapter ' + (i + 1);
+
+      // Extract body text: take <body>, strip tags, decode entities
+      var bodyM = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      var bodyHtml = bodyM ? bodyM[1] : html;
+      // Convert block tags to newlines
+      bodyHtml = bodyHtml.replace(/<\/(p|div|h[1-6]|li|br)[^>]*>/gi, '\n');
+      bodyHtml = bodyHtml.replace(/<br\s*\/?>/gi, '\n');
+      // Strip remaining tags
+      var content = bodyHtml.replace(/<[^>]+>/g, '');
+      // Decode common HTML entities
+      var entityDecoder = document.createElement('textarea');
+      entityDecoder.innerHTML = content;
+      content = entityDecoder.value;
+      // Collapse blank lines
+      content = content.replace(/[ \t]+/g, ' ').replace(/\n[ \t]*/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+
+      result.push({ title: title, content: content });
+    }
+    if (result.length === 0) throw new Error('EPUB contains no readable chapters');
+    return result;
+  }
+
   // ============ Open a book ============
   async function openBook(book, resumeChapter, resumeScroll) {
     $welcome.style.display = 'none';
     $reader.classList.add('active');
     $readerText.innerHTML = '<div style="text-align:center;padding:60px 0;"><div class="spinner" style="margin:0 auto 16px;"></div>Loading book...</div>';
-    $sidebarName.textContent = book.name.replace(/\.txt$/i, '');
+    $sidebarName.textContent = book.name.replace(/\.(txt|epub)$/i, '');
     $chapterBar.textContent = '';
     $chapterList.innerHTML = '';
     $chapterSearch.value = '';
     $chapterNoResults.classList.remove('visible');
 
+    var isEpub = /\.epub$/i.test(book.name);
+
     try {
-      var text;
-      if (book._localText) {
-        text = book._localText;
-      } else if (book._multipart) {
-        // Fetch parts from subfolder and concatenate
-        var partsInfo = book._info;
-        var partsList = null;
-        for (var br of ['main', 'master']) {
-          var pUrl = 'https://api.github.com/repos/' + partsInfo.owner + '/' + partsInfo.repo + '/contents/books/' + encodeURIComponent(book._dirName) + '?ref=' + br;
-          var pRes = await fetch(pUrl);
-          if (pRes.ok) { partsList = await pRes.json(); break; }
-        }
-        if (!partsList) throw new Error('Could not load book parts');
-        var partFiles = partsList.filter(f => f.name.endsWith('.txt')).sort(function (a, b) { return a.name.localeCompare(b.name); });
-        var parts = [];
-        for (var pi = 0; pi < partFiles.length; pi++) {
-          var pr = await fetch(partFiles[pi].download_url);
-          if (!pr.ok) throw new Error('Failed to load part ' + partFiles[pi].name);
-          parts.push(await pr.text());
-        }
-        text = parts.join('\n');
-      } else {
-        var res = await fetch(book.download_url);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        text = await res.text();
-      }
-      text = normalizeText(text);
       currentBook = book;
-      parseChapters(text);
+
+      if (isEpub) {
+        // EPUB flow: fetch as ArrayBuffer, parse with JSZip
+        var ab;
+        if (book._localBuffer) {
+          ab = book._localBuffer;
+        } else {
+          var er = await fetch(book.download_url);
+          if (!er.ok) throw new Error('HTTP ' + er.status);
+          ab = await er.arrayBuffer();
+        }
+        chapters = await parseEpub(ab);
+      } else {
+        var text;
+        if (book._localText) {
+          text = book._localText;
+        } else if (book._multipart) {
+          // Fetch parts from subfolder and concatenate
+          var partsInfo = book._info;
+          var partsList = null;
+          for (var br of ['main', 'master']) {
+            var pUrl = 'https://api.github.com/repos/' + partsInfo.owner + '/' + partsInfo.repo + '/contents/books/' + encodeURIComponent(book._dirName) + '?ref=' + br;
+            var pRes = await fetch(pUrl);
+            if (pRes.ok) { partsList = await pRes.json(); break; }
+          }
+          if (!partsList) throw new Error('Could not load book parts');
+          var partFiles = partsList.filter(f => f.name.endsWith('.txt')).sort(function (a, b) { return a.name.localeCompare(b.name); });
+          var parts = [];
+          for (var pi = 0; pi < partFiles.length; pi++) {
+            var pr = await fetch(partFiles[pi].download_url);
+            if (!pr.ok) throw new Error('Failed to load part ' + partFiles[pi].name);
+            parts.push(await pr.text());
+          }
+          text = parts.join('\n');
+        } else {
+          var res = await fetch(book.download_url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          text = await res.text();
+        }
+        text = normalizeText(text);
+        parseChapters(text);
+      }
       renderChapterList();
 
       var chIdx = (typeof resumeChapter === 'number' && resumeChapter < chapters.length) ? resumeChapter : 0;
@@ -2002,45 +2089,36 @@
   var $fileInput = document.getElementById('file-input');
 
   function handleLocalFiles(fileList) {
-    var txtFiles = [];
+    var validFiles = [];
     for (var i = 0; i < fileList.length; i++) {
-      if (fileList[i].name.toLowerCase().endsWith('.txt')) {
-        txtFiles.push(fileList[i]);
-      }
+      var n = fileList[i].name.toLowerCase();
+      if (n.endsWith('.txt') || n.endsWith('.epub')) validFiles.push(fileList[i]);
     }
-    if (txtFiles.length === 0) return;
+    if (validFiles.length === 0) return;
 
-    // If exactly one file, open it directly
-    if (txtFiles.length === 1) {
-      loadLocalFile(txtFiles[0]);
+    if (validFiles.length === 1) {
+      loadLocalFile(validFiles[0]);
       return;
     }
 
-    // Multiple files — add them to the book grid
-    txtFiles.forEach(function (file) {
-      var book = { name: file.name, _localText: null, _file: file };
+    validFiles.forEach(function (file) {
+      var book = { name: file.name, _file: file };
       books.push(book);
     });
     renderBookGrid();
   }
 
   function loadLocalFile(file) {
+    var isEpub = /\.epub$/i.test(file.name);
     var reader = new FileReader();
     reader.onload = function (e) {
-      var book = { name: file.name, _localText: normalizeText(e.target.result) };
-      currentBook = book;
-      $welcome.style.display = 'none';
-      $reader.classList.add('active');
-      $sidebarName.textContent = file.name.replace(/\.txt$/i, '');
-      $chapterBar.textContent = '';
-      $chapterList.innerHTML = '';
-      $chapterSearch.value = '';
-      $chapterNoResults.classList.remove('visible');
-      parseChapters(book._localText);
-      renderChapterList();
-      goToChapter(0);
+      var book = { name: file.name };
+      if (isEpub) book._localBuffer = e.target.result;
+      else book._localText = normalizeText(e.target.result);
+      openBook(book);
     };
-    reader.readAsText(file, 'UTF-8');
+    if (isEpub) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file, 'UTF-8');
   }
 
   $dropZone.addEventListener('click', function () { $fileInput.click(); });
@@ -2068,7 +2146,7 @@
   function makeBookCard(book) {
     var card = document.createElement('div');
     card.className = 'book-card';
-    var name = book.name.replace(/\.txt$/i, '');
+    var name = book.name.replace(/\.(txt|epub)$/i, '');
     var progress = getBookProgress(book.name);
     var progressHtml = '';
     if (progress && progress.chapter !== undefined && progress.total) {
@@ -2081,14 +2159,17 @@
       progressHtml +
       '<div class="book-ext">TXT</div>';
     card.addEventListener('click', function () {
-      if (book._file && !book._localText) {
+      if (book._file && !book._localText && !book._localBuffer) {
+        var isEp = /\.epub$/i.test(book._file.name);
         var reader = new FileReader();
         reader.onload = function (ev) {
-          book._localText = normalizeText(ev.target.result);
+          if (isEp) book._localBuffer = ev.target.result;
+          else book._localText = normalizeText(ev.target.result);
           book.download_url = null;
           openBook(book);
         };
-        reader.readAsText(book._file, 'UTF-8');
+        if (isEp) reader.readAsArrayBuffer(book._file);
+        else reader.readAsText(book._file, 'UTF-8');
       } else {
         openBook(book);
       }
