@@ -1924,13 +1924,19 @@
       // Book uses two formats: "N.Title" early on, then "第N章：N.Title" later.
       // Match either; for the 第X章 form, capture only the inner "N.Title" portion.
       splits = collectMatches(text, /^(?:第[零一二三四五六七八九十百千万0-9]+章[：:]\s*)?(\d+\.[^\n]*)/gm);
-      // Dedupe by position
       var seen = {};
       splits = splits.filter(function (s) {
         if (seen[s.index]) return false;
         seen[s.index] = true;
         return s.title.length <= 100;
       });
+    } else if (currentBook && currentBook.name.indexOf('乖女儿看好了') >= 0) {
+      // Book uses two formats: "No、001Title" (early) and " 第N章：Title" (later).
+      // Donator name list at end (after 【最后的感谢名单】) must be excluded.
+      var cutoffIdx = text.indexOf('最后的感谢名单');
+      if (cutoffIdx < 0) cutoffIdx = text.length;
+      splits = collectMatches(text, /^\s*(No、\d+[^\s\n][^\n]*|第[零一二三四五六七八九十百千万0-9]+章[：:][^\n]*)/gm);
+      splits = splits.filter(function (s) { return s.index < cutoffIdx && s.title.length <= 100; });
     } else {
 
     // --- Strategy 1: Chinese chapter markers (第X章, with optional 第X节 prefix) ---
