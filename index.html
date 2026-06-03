@@ -1906,14 +1906,37 @@
         }
       }
     } else if (currentBook && currentBook.name.indexOf('最强副职业') >= 0) {
-      // 最强副职业 uses "N Title" format (number + space + title)
-      var allSpace = collectMatches(text, /^(\d+\s+[^\n]*)/gm);
-      var expect2 = 1;
-      for (var si = 0; si < allSpace.length; si++) {
-        var sn = parseInt(allSpace[si].title, 10);
-        if (sn === expect2 || (sn > expect2 && sn <= expect2 + 20)) {
-          splits.push(allSpace[si]);
-          expect2 = sn + 1;
+      // 最强副职业: 5 volumes (第X卷), each with chapters resetting from 1.
+      // Chapter formats: "N Title", "N《Title》", or just "N" alone.
+      // Strategy: find volume markers, then within each volume detect ascending N.
+      var volRe = /^(第[一二三四五]卷)[^\n]*/gm;
+      var vols = [];
+      var vm;
+      while ((vm = volRe.exec(text)) !== null) vols.push({ name: vm[1], index: vm.index });
+      vols.push({ name: 'END', index: text.length });
+
+      var chRe = /^(\d+)(?:([《\s])([^\n]*))?$/gm;
+      var allCh = [];
+      var cm;
+      while ((cm = chRe.exec(text)) !== null) {
+        var t = cm[1];
+        if (cm[2] === '《') t = cm[1] + '《' + cm[3];
+        else if (cm[2] === ' ') t = cm[1] + ' ' + cm[3];
+        allCh.push({ index: cm.index, num: parseInt(cm[1], 10), title: t });
+      }
+
+      for (var vi = 0; vi < vols.length - 1; vi++) {
+        var vStart = vols[vi].index;
+        var vEnd = vols[vi + 1].index;
+        splits.push({ index: vStart, title: vols[vi].name });
+        var expectN = 1;
+        for (var ci = 0; ci < allCh.length; ci++) {
+          var c = allCh[ci];
+          if (c.index < vStart || c.index >= vEnd) continue;
+          if (c.num === expectN || (c.num > expectN && c.num <= expectN + 5)) {
+            splits.push({ index: c.index, title: c.title });
+            expectN = c.num + 1;
+          }
         }
       }
     } else if (currentBook && currentBook.name.indexOf('魔法少女？被坑成的啦') >= 0) {
