@@ -1905,6 +1905,30 @@
           expect = dn + 1;
         }
       }
+    } else if (currentBook && currentBook.name.indexOf('人类魔法师怎么会是魔神皇') >= 0) {
+      // 人类魔法师: 4 volumes (第X卷：), continuous chapter numbering 1-351.
+      // Early chapters use "N~Title", later switch to "N、Title".
+      var pmVols = collectMatches(text, /^\s*(第[零一二三四五六七八九十百千万0-9]+卷[：:][^\n]*)/gm);
+      var pmCands = [];
+      var pmRe = /^(\d+)[~、][^\n]*/gm;
+      var pmM;
+      while ((pmM = pmRe.exec(text)) !== null) {
+        pmCands.push({ index: pmM.index, num: parseInt(pmM[1], 10), title: pmM[0] });
+      }
+      // Build ascending chain (no volume reset)
+      var pmChain = [];
+      var pmExpect = 1;
+      for (var pi = 0; pi < pmCands.length; pi++) {
+        var pc = pmCands[pi];
+        if (pc.title.length > 100) continue;
+        if (pc.num === pmExpect || (pc.num > pmExpect && pc.num <= pmExpect + 5)) {
+          pmChain.push({ index: pc.index, title: pc.title });
+          pmExpect = pc.num + 1;
+        }
+      }
+      // Merge volume markers and sort by position
+      splits = pmChain.concat(pmVols);
+      splits.sort(function (a, b) { return a.index - b.index; });
     } else if (currentBook && currentBook.name.indexOf('网游变身之倾城剑仙') >= 0) {
       // 网游变身: chapters wrapped as "===第N章 Title==="
       splits = collectMatches(text, /^(===第[零一二三四五六七八九十百千万0-9]+章[^=\n]*===)/gm);
