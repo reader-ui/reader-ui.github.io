@@ -157,22 +157,86 @@
   .tab-panel { display: none; width: 100%; max-width: 960px; }
   .tab-panel.active { display: block; }
 
+  /* ========== Book search ========== */
+  .book-search {
+    position: relative;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .book-search-input {
+    width: 100%;
+    padding: 14px 44px 14px 44px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: all var(--transition);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .book-search-input::placeholder { color: var(--text-secondary); opacity: 0.6; }
+  .book-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+  .book-search-icon {
+    position: absolute;
+    left: 16px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  .book-search-clear {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 24px; height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: all var(--transition);
+  }
+
+  .book-search-clear:hover { background: var(--accent); color: #fff; }
+  .book-search-clear.visible { display: flex; }
+
+  .book-search-no-results {
+    display: none;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 48px 20px;
+    grid-column: 1 / -1;
+  }
+  .book-search-no-results.visible { display: block; }
+
   /* ========== Category filter ========== */
   .category-filter {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 28px;
     width: 100%;
   }
 
   .category-chip {
-    padding: 7px 16px;
+    padding: 9px 18px;
     border-radius: 999px;
     border: 1px solid var(--border);
     background: var(--bg-card);
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
     font-family: inherit;
     font-weight: 600;
     cursor: pointer;
@@ -192,8 +256,8 @@
   /* ========== Book grid ========== */
   .book-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 26px;
     width: 100%;
   }
 
@@ -263,17 +327,17 @@
   }
 
   .book-card-body {
-    padding: 12px 14px 14px;
+    padding: 16px 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     flex: 1;
   }
 
   .book-card .book-title {
-    font-size: 14px;
+    font-size: 15.5px;
     font-weight: 700;
-    line-height: 1.45;
+    line-height: 1.5;
     word-break: break-word;
     font-family: "Noto Serif SC", Georgia, serif;
     display: -webkit-box;
@@ -812,10 +876,11 @@
     #welcome-screen { padding: 32px 20px 48px; }
     #welcome-screen .logo { font-size: 44px; }
     #welcome-screen h1 { font-size: 24px; }
-    .book-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
-    .book-cover-icon { font-size: 32px; }
-    .book-card-body { padding: 10px 10px 12px; }
-    .book-card .book-title { font-size: 13px; }
+    .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+    .book-cover-icon { font-size: 34px; }
+    .book-card-body { padding: 12px 12px 14px; }
+    .book-card .book-title { font-size: 14px; }
+    .book-search-input { padding: 12px 40px 12px 40px; font-size: 14px; }
     .reader-content-inner { padding: 28px 18px 56px; font-size: 17px; }
     .reader-topbar { padding: 0 16px; height: 52px; }
     .ctrl-btn { width: 38px; height: 38px; }
@@ -1233,8 +1298,14 @@
   </div>
 
   <div class="tab-panel active" id="tab-books">
+    <div class="book-search">
+      <span class="book-search-icon">&#128269;</span>
+      <input type="text" class="book-search-input" id="book-search" placeholder="Search books..." autocomplete="off">
+      <button class="book-search-clear" id="book-search-clear">&times;</button>
+    </div>
     <div class="category-filter" id="category-filter"></div>
     <div class="book-grid" id="book-grid"></div>
+    <div class="book-search-no-results" id="book-search-no-results">No books found</div>
     <div class="local-upload">
       <span class="local-upload-label">Or load .txt / .epub files from your device</span>
       <div class="drop-zone" id="drop-zone">
@@ -1388,7 +1459,11 @@
   const $reader     = document.getElementById('reader-screen');
   const $bookGrid   = document.getElementById('book-grid');
   const $categoryFilter = document.getElementById('category-filter');
+  const $bookSearch = document.getElementById('book-search');
+  const $bookSearchClear = document.getElementById('book-search-clear');
+  const $bookSearchNoResults = document.getElementById('book-search-no-results');
   let selectedCategory = 'all';
+  let bookSearchQuery = '';
   const $chapterList = document.getElementById('chapter-list');
   const $readerText = document.getElementById('reader-text');
   const $readerContent = document.getElementById('reader-content');
@@ -2387,9 +2462,16 @@
     });
   }
 
+  function bookMatchesSearch(book, query) {
+    var name = book.name.replace(/\.(txt|epub)$/i, '');
+    return name.toLowerCase().indexOf(query) >= 0;
+  }
+
   function renderBookGrid() {
     renderCategoryFilter();
     $bookGrid.innerHTML = '';
+
+    // Category scoping (same rules as before, just factored out so search can reuse it).
     var uncategorized = books.filter(function (b) { return !b._category; });
     var byCategory = {};
     books.forEach(function (b) {
@@ -2412,6 +2494,23 @@
       list.forEach(function (book) { $bookGrid.appendChild(makeBookCard(book)); });
     }
 
+    var query = bookSearchQuery.trim().toLowerCase();
+
+    if (query) {
+      // Searching flattens across categories (within whatever category is selected) — no headers, just results.
+      var scoped;
+      if (selectedCategory === 'all') scoped = books;
+      else if (selectedCategory === 'uncategorized') scoped = uncategorized;
+      else scoped = byCategory[selectedCategory] || [];
+
+      var matches = scoped.filter(function (b) { return bookMatchesSearch(b, query); });
+      appendSection(matches, null);
+      $bookSearchNoResults.classList.toggle('visible', matches.length === 0);
+      return;
+    }
+
+    $bookSearchNoResults.classList.remove('visible');
+
     if (selectedCategory === 'all') {
       // Only label the uncategorized group when there's at least one real category to distinguish it from.
       appendSection(uncategorized, (uncategorized.length > 0 && catKeys.length > 0) ? '未分類' : null);
@@ -2422,6 +2521,28 @@
       appendSection(byCategory[selectedCategory] || [], null);
     }
   }
+
+  // ============ Book search ============
+  var bookSearchTimer = null;
+
+  $bookSearch.addEventListener('input', function () {
+    var val = this.value;
+    $bookSearchClear.classList.toggle('visible', val.length > 0);
+    clearTimeout(bookSearchTimer);
+    bookSearchTimer = setTimeout(function () {
+      bookSearchQuery = val;
+      renderBookGrid();
+    }, 120);
+  });
+
+  $bookSearchClear.addEventListener('click', function () {
+    $bookSearch.value = '';
+    $bookSearchClear.classList.remove('visible');
+    clearTimeout(bookSearchTimer);
+    bookSearchQuery = '';
+    renderBookGrid();
+    $bookSearch.focus();
+  });
 
   // ============ EPUB cover extraction ============
   var coverQueue = [];
