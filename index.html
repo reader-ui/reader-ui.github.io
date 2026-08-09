@@ -157,11 +157,43 @@
   .tab-panel { display: none; width: 100%; max-width: 960px; }
   .tab-panel.active { display: block; }
 
+  /* ========== Category filter ========== */
+  .category-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+
+  .category-chip {
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+
+  .category-chip:hover { color: var(--text); border-color: var(--accent-light); }
+
+  .category-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
+
   /* ========== Book grid ========== */
   .book-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 18px;
     width: 100%;
   }
 
@@ -169,24 +201,13 @@
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 24px 20px;
     cursor: pointer;
     transition: all var(--transition);
-    position: relative;
     overflow: hidden;
     text-align: left;
     box-shadow: var(--shadow-sm);
-  }
-
-  .book-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 4px; height: 100%;
-    background: linear-gradient(180deg, var(--accent), var(--accent-light));
-    transform: scaleY(0);
-    transform-origin: bottom;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
   }
 
   .book-card:hover {
@@ -196,30 +217,69 @@
   }
 
   .book-card:active { transform: translateY(-1px); }
-  .book-card:hover::before { transform: scaleY(1); }
 
-  .book-card .book-icon {
-    font-size: 32px;
-    margin-bottom: 12px;
-    display: block;
+  .book-cover {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    background: linear-gradient(160deg, var(--accent-glow), var(--bg-sidebar));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .book-cover-icon {
+    font-size: 40px;
+    opacity: 0.5;
+  }
+
+  .book-cover-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .book-card.has-cover .book-cover-icon { display: none; }
+  .book-card.has-cover .book-cover-img { display: block; }
+  .book-card:hover .book-cover-img { transform: scale(1.05); }
+
+  .book-ext-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: rgba(20, 18, 16, 0.55);
+    color: #fff;
+  }
+
+  .book-card-body {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
   }
 
   .book-card .book-title {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     line-height: 1.45;
     word-break: break-word;
     font-family: "Noto Serif SC", Georgia, serif;
-  }
-
-  .book-card .book-ext {
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-top: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    font-weight: 600;
-    opacity: 0.7;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   /* ========== Links list ========== */
@@ -752,10 +812,10 @@
     #welcome-screen { padding: 32px 20px 48px; }
     #welcome-screen .logo { font-size: 44px; }
     #welcome-screen h1 { font-size: 24px; }
-    .book-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-    .book-card { padding: 20px 16px; }
-    .book-card .book-icon { font-size: 28px; margin-bottom: 10px; }
-    .book-card .book-title { font-size: 15px; }
+    .book-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .book-cover-icon { font-size: 32px; }
+    .book-card-body { padding: 10px 10px 12px; }
+    .book-card .book-title { font-size: 13px; }
     .reader-content-inner { padding: 28px 18px 56px; font-size: 17px; }
     .reader-topbar { padding: 0 16px; height: 52px; }
     .ctrl-btn { width: 38px; height: 38px; }
@@ -1173,6 +1233,7 @@
   </div>
 
   <div class="tab-panel active" id="tab-books">
+    <div class="category-filter" id="category-filter"></div>
     <div class="book-grid" id="book-grid"></div>
     <div class="local-upload">
       <span class="local-upload-label">Or load .txt / .epub files from your device</span>
@@ -1326,6 +1387,8 @@
   const $welcome    = document.getElementById('welcome-screen');
   const $reader     = document.getElementById('reader-screen');
   const $bookGrid   = document.getElementById('book-grid');
+  const $categoryFilter = document.getElementById('category-filter');
+  let selectedCategory = 'all';
   const $chapterList = document.getElementById('chapter-list');
   const $readerText = document.getElementById('reader-text');
   const $readerContent = document.getElementById('reader-content');
@@ -2016,6 +2079,12 @@
       if (cutoffIdx < 0) cutoffIdx = text.length;
       splits = collectMatches(text, /^\s*(No、\d+[^\s\n][^\n]*|第[零一二三四五六七八九十百千万0-9]+章[：:][^\n]*)/gm);
       splits = splits.filter(function (s) { return s.index < cutoffIdx && s.title.length <= 100; });
+    } else if (currentBook && currentBook.name.indexOf('因为怕痛就把攻击全闪避了') >= 0) {
+      // Book uses "N~Title" for real chapters, but in-story game/system text
+      // also contains "第X章"-style phrases, which would make Strategy 1 match
+      // hundreds of false positives. Force tilde parsing with chain validation.
+      var painCandidates = collectMatches(text, /^\s*(\d+~[^\n]*)/gm);
+      splits = extractNumberedChapters(text, painCandidates);
     } else {
 
     // --- Strategy 1: Chinese chapter markers (第X章, with optional 第X节 prefix) ---
@@ -2243,6 +2312,7 @@
     var card = document.createElement('div');
     card.className = 'book-card';
     var name = book.name.replace(/\.(txt|epub)$/i, '');
+    var isEpub = /\.epub$/i.test(book.name);
     var progress = getBookProgress(book.name);
     var progressHtml = '';
     if (progress && progress.chapter !== undefined && progress.total) {
@@ -2250,10 +2320,15 @@
       progressHtml = '<div class="book-progress">Ch ' + (progress.chapter + 1) + '/' + progress.total + ' (' + pct + '%)</div>';
     }
     card.innerHTML =
-      '<span class="book-icon">&#128218;</span>' +
-      '<div class="book-title">' + escapeHtml(name) + '</div>' +
-      progressHtml +
-      '<div class="book-ext">TXT</div>';
+      '<div class="book-cover">' +
+        '<span class="book-cover-icon">&#128218;</span>' +
+        '<img class="book-cover-img" alt="">' +
+        '<span class="book-ext-badge">' + (isEpub ? 'EPUB' : 'TXT') + '</span>' +
+      '</div>' +
+      '<div class="book-card-body">' +
+        '<div class="book-title">' + escapeHtml(name) + '</div>' +
+        progressHtml +
+      '</div>';
     card.addEventListener('click', function () {
       if (book._file && !book._localText && !book._localBuffer) {
         var isEp = /\.epub$/i.test(book._file.name);
@@ -2270,10 +2345,50 @@
         openBook(book);
       }
     });
+
+    // Only EPUBs carry an embedded cover image — TXT cards keep the plain icon + "TXT" badge.
+    if (isEpub) queueCoverLoad(book, card);
+
     return card;
   }
 
+  function renderCategoryFilter() {
+    var cats = {};
+    var hasUncategorized = false;
+    books.forEach(function (b) {
+      if (b._category) cats[b._category] = true;
+      else hasUncategorized = true;
+    });
+    var catNames = Object.keys(cats).sort();
+
+    // Nothing to filter by yet — hide the bar rather than show a pointless single toggle.
+    if (catNames.length === 0) {
+      $categoryFilter.innerHTML = '';
+      $categoryFilter.style.display = 'none';
+      return;
+    }
+    $categoryFilter.style.display = '';
+
+    var chips = [{ key: 'all', label: '全部' }];
+    if (hasUncategorized) chips.push({ key: 'uncategorized', label: '未分類' });
+    catNames.forEach(function (c) { chips.push({ key: c, label: c }); });
+
+    $categoryFilter.innerHTML = '';
+    chips.forEach(function (c) {
+      var btn = document.createElement('button');
+      btn.className = 'category-chip' + (selectedCategory === c.key ? ' active' : '');
+      btn.textContent = c.label;
+      btn.addEventListener('click', function () {
+        if (selectedCategory === c.key) return;
+        selectedCategory = c.key;
+        renderBookGrid();
+      });
+      $categoryFilter.appendChild(btn);
+    });
+  }
+
   function renderBookGrid() {
+    renderCategoryFilter();
     $bookGrid.innerHTML = '';
     var uncategorized = books.filter(function (b) { return !b._category; });
     var byCategory = {};
@@ -2283,15 +2398,185 @@
         byCategory[b._category].push(b);
       }
     });
-    uncategorized.forEach(function (book) { $bookGrid.appendChild(makeBookCard(book)); });
-    Object.keys(byCategory).sort().forEach(function (cat) {
-      var header = document.createElement('div');
-      header.className = 'category-header';
-      header.textContent = cat;
-      header.style.cssText = 'grid-column:1/-1;font-size:18px;font-weight:700;color:var(--accent);margin:24px 0 4px;padding:8px 4px;border-bottom:2px solid var(--border);font-family:"Noto Serif SC",Georgia,serif;';
-      $bookGrid.appendChild(header);
-      byCategory[cat].forEach(function (book) { $bookGrid.appendChild(makeBookCard(book)); });
+    var catKeys = Object.keys(byCategory).sort();
+
+    function appendSection(list, headerText) {
+      if (list.length === 0) return;
+      if (headerText) {
+        var header = document.createElement('div');
+        header.className = 'category-header';
+        header.textContent = headerText;
+        header.style.cssText = 'grid-column:1/-1;font-size:18px;font-weight:700;color:var(--accent);margin:24px 0 4px;padding:8px 4px;border-bottom:2px solid var(--border);font-family:"Noto Serif SC",Georgia,serif;';
+        $bookGrid.appendChild(header);
+      }
+      list.forEach(function (book) { $bookGrid.appendChild(makeBookCard(book)); });
+    }
+
+    if (selectedCategory === 'all') {
+      // Only label the uncategorized group when there's at least one real category to distinguish it from.
+      appendSection(uncategorized, (uncategorized.length > 0 && catKeys.length > 0) ? '未分類' : null);
+      catKeys.forEach(function (cat) { appendSection(byCategory[cat], cat); });
+    } else if (selectedCategory === 'uncategorized') {
+      appendSection(uncategorized, null);
+    } else {
+      appendSection(byCategory[selectedCategory] || [], null);
+    }
+  }
+
+  // ============ EPUB cover extraction ============
+  var coverQueue = [];
+  var coverActive = 0;
+  var MAX_COVER_CONCURRENT = 3;
+
+  function queueCoverLoad(book, card) {
+    coverQueue.push({ book: book, card: card });
+    pumpCoverQueue();
+  }
+
+  function pumpCoverQueue() {
+    while (coverActive < MAX_COVER_CONCURRENT && coverQueue.length > 0) {
+      var job = coverQueue.shift();
+      coverActive++;
+      loadEpubCover(job.book, job.card).then(function () {
+        coverActive--;
+        pumpCoverQueue();
+      });
+    }
+  }
+
+  function applyCoverToCard(card, dataUrl) {
+    if (!card || !card.isConnected) return;
+    var img = card.querySelector('.book-cover-img');
+    if (!img) return;
+    img.src = dataUrl;
+    card.classList.add('has-cover');
+  }
+
+  function getCoverCacheKey(book) {
+    if (book.sha) return 'reader-cover-' + book.sha;
+    if (book.download_url) return 'reader-cover-' + book.download_url;
+    return null;
+  }
+
+  function guessMimeFromHref(href) {
+    var ext = (href.split('.').pop() || '').toLowerCase().split(/[?#]/)[0];
+    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+    if (ext === 'png') return 'image/png';
+    if (ext === 'gif') return 'image/gif';
+    if (ext === 'svg') return 'image/svg+xml';
+    if (ext === 'webp') return 'image/webp';
+    return 'image/jpeg';
+  }
+
+  // Parses just enough of the EPUB (container.xml → OPF → manifest) to locate
+  // and extract the cover image, without doing a full chapter parse.
+  async function extractEpubCoverDataUrl(arrayBuffer) {
+    if (typeof JSZip === 'undefined') return null;
+    var zip = await JSZip.loadAsync(arrayBuffer);
+
+    var containerFile = zip.file('META-INF/container.xml');
+    if (!containerFile) return null;
+    var containerXml = await containerFile.async('string');
+    var rootfileMatch = containerXml.match(/<rootfile[^>]+full-path=["']([^"']+)["']/);
+    if (!rootfileMatch) return null;
+    var opfPath = rootfileMatch[1];
+    var opfDir = opfPath.indexOf('/') >= 0 ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+
+    var opfFile = zip.file(opfPath);
+    if (!opfFile) return null;
+    var opfXml = await opfFile.async('string');
+
+    var manifest = {};
+    var manifestRe = /<item\s+([^>]+)\/?>/g;
+    var m;
+    while ((m = manifestRe.exec(opfXml)) !== null) {
+      var attrs = m[1];
+      var idM = attrs.match(/id=["']([^"']+)["']/);
+      var hrefM = attrs.match(/href=["']([^"']+)["']/);
+      var typeM = attrs.match(/media-type=["']([^"']+)["']/);
+      var propM = attrs.match(/properties=["']([^"']+)["']/);
+      if (idM && hrefM) {
+        manifest[idM[1]] = { href: hrefM[1], mediaType: typeM ? typeM[1] : '', properties: propM ? propM[1] : '' };
+      }
+    }
+
+    var coverItem = null;
+
+    // EPUB3: manifest item flagged with properties="cover-image"
+    Object.keys(manifest).forEach(function (id) {
+      if (!coverItem && /cover-image/i.test(manifest[id].properties)) coverItem = manifest[id];
     });
+
+    // EPUB2: <meta name="cover" content="ID"/> pointing at a manifest item
+    if (!coverItem) {
+      var metaM = opfXml.match(/<meta\s+[^>]*name=["']cover["'][^>]*content=["']([^"']+)["']/i);
+      if (metaM && manifest[metaM[1]]) coverItem = manifest[metaM[1]];
+    }
+
+    // Heuristic fallback: any image item whose id/href mentions "cover"
+    if (!coverItem) {
+      Object.keys(manifest).forEach(function (id) {
+        if (coverItem) return;
+        var item = manifest[id];
+        var isImage = /^image\//.test(item.mediaType) || /\.(jpe?g|png|gif|webp)$/i.test(item.href);
+        if (isImage && /cover/i.test(id + item.href)) coverItem = item;
+      });
+    }
+
+    if (!coverItem) return null;
+
+    var coverPath = opfDir + coverItem.href;
+    var coverFile = zip.file(coverPath);
+    if (!coverFile) return null;
+
+    var base64 = await coverFile.async('base64');
+    var mime = coverItem.mediaType || guessMimeFromHref(coverItem.href);
+    return 'data:' + mime + ';base64,' + base64;
+  }
+
+  async function loadEpubCover(book, card) {
+    try {
+      if (book._coverDataUrl) {
+        applyCoverToCard(card, book._coverDataUrl);
+        return;
+      }
+
+      var cacheKey = getCoverCacheKey(book);
+      if (cacheKey) {
+        var cached = null;
+        try { cached = localStorage.getItem(cacheKey); } catch (e) {}
+        if (cached) {
+          book._coverDataUrl = cached;
+          applyCoverToCard(card, cached);
+          return;
+        }
+      }
+
+      var ab;
+      if (book._localBuffer) {
+        ab = book._localBuffer;
+      } else if (book._file) {
+        ab = await book._file.arrayBuffer();
+      } else if (book.download_url) {
+        var res = await fetch(book.download_url);
+        if (!res.ok) return;
+        ab = await res.arrayBuffer();
+      } else {
+        return;
+      }
+
+      var dataUrl = await extractEpubCoverDataUrl(ab);
+      if (!dataUrl) return;
+
+      book._coverDataUrl = dataUrl;
+      applyCoverToCard(card, dataUrl);
+
+      if (cacheKey) {
+        try { localStorage.setItem(cacheKey, dataUrl); } catch (e) { /* quota exceeded — skip caching */ }
+      }
+    } catch (e) {
+      // Any parse/network failure just leaves the fallback icon in place.
+    }
   }
 
   // ============ Tab switching ============
