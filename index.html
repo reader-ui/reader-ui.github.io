@@ -6,46 +6,79 @@
 <title>Book Reader</title>
 <style>
   :root {
-    --bg: #f6f2eb;
-    --bg-sidebar: #eee8da;
+    /* ---- app chrome ---- */
+    --bg: #f4f1ea;
+    --bg-sidebar: #ffffff;
     --bg-card: #ffffff;
-    --text: #1e1a14;
-    --text-secondary: #6b5e4f;
-    --accent: #9a7420;
-    --accent-hover: #7a5c18;
-    --accent-light: #c9a84c;
-    --accent-glow: rgba(154, 116, 32, 0.12);
-    --border: #ddd5c4;
-    --shadow-sm: 0 1px 3px rgba(44, 36, 24, 0.06);
-    --shadow-md: 0 4px 16px rgba(44, 36, 24, 0.08);
-    --shadow-lg: 0 8px 32px rgba(44, 36, 24, 0.10);
-    --reader-bg: #faf8f3;
-    --reader-text: #2a2318;
-    --chapter-hover: rgba(154, 116, 32, 0.06);
-    --scrollbar-thumb: #c4b89a;
+    --text: #3c352e;
+    --text-secondary: #857c72;
+    /* ---- SFACG accent ---- */
+    --accent: #d86a36;
+    --accent-hover: #da7e53;
+    --accent-light: #e79b6f;
+    --accent-glow: rgba(216, 106, 54, 0.10);
+    --border: #e2ddd4;
+    --shadow-sm: 0 1px 3px rgba(60, 50, 40, 0.06);
+    --shadow-md: 0 4px 16px rgba(60, 50, 40, 0.09);
+    --shadow-lg: 0 8px 32px rgba(60, 50, 40, 0.14);
+    --chapter-hover: rgba(216, 106, 54, 0.07);
+    --scrollbar-thumb: #cdc6ba;
     --scrollbar-track: transparent;
     --radius: 12px;
     --radius-sm: 8px;
     --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ---- reading surface: default "white" skin ---- */
+    --page-bg: #f1f1f1;
+    --card-bg: #fbfbfb;
+    --reader-text: #545454;
+    --card-line: #d9d9d9;
+    --card-meta: #9d9d9d;
+    --card-shadow: rgba(0, 0, 0, 0.16);
+  }
+
+  /* ========== Reading skins (SFACG 阅读主题) ========== */
+  [data-skin="blue"] {
+    --page-bg: #d2ecfd; --card-bg: #e1f3ff; --reader-text: #3d4c56;
+    --card-line: #bbd8e9; --card-meta: #7a8b98;
+  }
+  [data-skin="yellow"] {
+    --page-bg: #fbf4cf; --card-bg: #fbf6d9; --reader-text: #58502f;
+    --card-line: #e3dbb2; --card-meta: #9b9166;
+  }
+  [data-skin="green"] {
+    --page-bg: #cbe8c8; --card-bg: #dbeed9; --reader-text: #3d4e3b;
+    --card-line: #bbd5b8; --card-meta: #7c9078;
+  }
+  [data-skin="pink"] {
+    --page-bg: #fdcce8; --card-bg: #ffdaef; --reader-text: #5a404f;
+    --card-line: #edc1d9; --card-meta: #a48399;
+  }
+  [data-skin="gray"] {
+    --page-bg: #e6e4e5; --card-bg: #eeeced; --reader-text: #4a4a4a;
+    --card-line: #d3d0d1; --card-meta: #8c8989;
+  }
+  [data-skin="dark"] {
+    --page-bg: #121110; --card-bg: #1c1b19; --reader-text: #c9c2b6;
+    --card-line: #33302c; --card-meta: #7d766c;
+    --card-shadow: rgba(0, 0, 0, 0.55);
   }
 
   [data-theme="dark"] {
-    --bg: #141210;
-    --bg-sidebar: #1c1a17;
-    --bg-card: #242220;
-    --text: #e4ddd2;
-    --text-secondary: #9a8e7e;
-    --accent: #dbb34e;
-    --accent-hover: #c99f3a;
-    --accent-light: #e8c96a;
-    --accent-glow: rgba(219, 179, 78, 0.10);
-    --border: #332f2a;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
-    --reader-bg: #1a1816;
-    --reader-text: #dcd4c6;
-    --chapter-hover: rgba(219, 179, 78, 0.08);
+    --bg: #121110;
+    --bg-sidebar: #1a1917;
+    --bg-card: #201f1c;
+    --text: #ddd6cb;
+    --text-secondary: #948b7f;
+    --accent: #e2854f;
+    --accent-hover: #ec9a6a;
+    --accent-light: #f0ab80;
+    --accent-glow: rgba(226, 133, 79, 0.12);
+    --border: #33302c;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
+    --chapter-hover: rgba(226, 133, 79, 0.10);
     --scrollbar-thumb: #4a4540;
     --scrollbar-track: transparent;
   }
@@ -465,42 +498,50 @@
 
   .drop-zone input[type="file"] { display: none; }
 
-  /* ========== Reader Layout ========== */
+  /* ========== Reader Layout (SFACG-style) ========== */
   #reader-screen { display: none; height: 100%; }
-  #reader-screen.active { display: flex; }
+  #reader-screen.active { display: block; }
 
-  /* Sidebar */
+  /* ---------- Catalog drawer ---------- */
   .sidebar {
-    width: 300px;
-    min-width: 300px;
+    position: fixed;
+    left: 0; top: 0;
+    width: 340px;
+    max-width: 88vw;
+    height: 100%;
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    transition: transform var(--transition), background var(--transition);
-    z-index: 10;
+    transform: translateX(-100%);
+    transition: transform var(--transition);
+    z-index: 30;
+    box-shadow: var(--shadow-lg);
+    overscroll-behavior: contain;
   }
 
+  .sidebar.open { transform: translateX(0); }
+
   .sidebar-header {
-    padding: 16px 20px;
+    padding: 16px 18px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     gap: 12px;
-    min-height: 56px;
+    min-height: 60px;
   }
 
   .btn-back {
-    width: 40px; height: 40px;
+    width: 38px; height: 38px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-card);
+    border-radius: 50%;
+    background: transparent;
     color: var(--text);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 17px;
     transition: all var(--transition);
     flex-shrink: 0;
   }
@@ -514,6 +555,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
+    font-family: "Noto Serif SC", Georgia, serif;
   }
 
   .chapter-search {
@@ -526,8 +568,8 @@
     width: 100%;
     padding: 10px 14px 10px 38px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-card);
+    border-radius: 999px;
+    background: var(--bg);
     color: var(--text);
     font-size: 14px;
     font-family: inherit;
@@ -572,31 +614,49 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 6px 0;
+    padding: 6px 0 20px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
   }
 
   .chapter-item {
-    padding: 12px 24px;
+    padding: 11px 20px 11px 22px;
     cursor: pointer;
     font-size: 14px;
     color: var(--text-secondary);
-    transition: all var(--transition);
-    border-left: 3px solid transparent;
-    line-height: 1.5;
+    transition: background var(--transition), color var(--transition);
+    line-height: 1.55;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
   }
 
-  .chapter-item:hover {
-    background: var(--chapter-hover);
-    color: var(--text);
+  .chapter-item .ci-num {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.55;
+    min-width: 26px;
+    font-variant-numeric: tabular-nums;
   }
+
+  .chapter-item .ci-title { flex: 1; min-width: 0; }
+
+  .chapter-item:hover { background: var(--chapter-hover); color: var(--accent); }
 
   .chapter-item.active {
     color: var(--accent);
-    border-left-color: var(--accent);
     background: var(--accent-glow);
     font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .chapter-item.active .ci-num { color: var(--accent); opacity: 0.8; }
+
+  .chapter-item.bookmarked .ci-title::after {
+    content: "\2605";
+    margin-left: 6px;
+    color: var(--accent);
+    font-size: 11px;
   }
 
   .chapter-item.hidden { display: none; }
@@ -612,52 +672,56 @@
   .chapter-no-results.visible { display: block; }
 
   .chapter-item .highlight {
-    background: rgba(154, 116, 32, 0.2);
+    background: rgba(216, 106, 54, 0.22);
     border-radius: 2px;
     padding: 0 1px;
   }
 
-  [data-theme="dark"] .chapter-item .highlight {
-    background: rgba(219, 179, 78, 0.22);
-  }
-
-  /* ========== Reader content ========== */
+  /* ---------- Main reading pane ---------- */
   .reader-main {
-    flex: 1;
+    position: relative;
+    height: 100%;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    --card-w: 860px;
   }
+  .reader-main.width-small  { --card-w: 640px; }
+  .reader-main.width-middle { --card-w: 860px; }
+  .reader-main.width-large  { --card-w: 1040px; }
 
   .reader-topbar {
-    height: 56px;
-    padding: 0 24px;
+    height: 52px;
+    padding: 0 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
+    border-bottom: 1px solid var(--card-line);
+    background: var(--card-bg);
+    color: var(--reader-text);
     flex-shrink: 0;
     gap: 12px;
+    transition: background var(--transition), border-color var(--transition);
+    z-index: 3;
   }
 
   .topbar-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex: 1;
     min-width: 0;
   }
 
   .btn-toggle-sidebar {
-    display: none;
-    width: 42px; height: 42px;
-    border: 1px solid var(--border);
+    display: flex;
+    width: 36px; height: 36px;
+    border: 1px solid var(--card-line);
     border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    color: var(--text);
+    background: transparent;
+    color: var(--reader-text);
     cursor: pointer;
-    font-size: 18px;
+    font-size: 17px;
     align-items: center;
     justify-content: center;
     transition: all var(--transition);
@@ -666,10 +730,22 @@
 
   .btn-toggle-sidebar:hover { border-color: var(--accent); color: var(--accent); }
 
+  .topbar-book {
+    font-size: 13px;
+    color: var(--card-meta);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 32%;
+    flex-shrink: 0;
+  }
+
+  .topbar-sep { color: var(--card-meta); opacity: 0.5; flex-shrink: 0; }
+
   .chapter-title-bar {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    color: var(--text);
+    color: var(--reader-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -683,16 +759,16 @@
   }
 
   .ctrl-btn {
-    width: 40px; height: 40px;
-    border: 1px solid var(--border);
+    width: 36px; height: 36px;
+    border: 1px solid var(--card-line);
     border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    color: var(--text);
+    background: transparent;
+    color: var(--reader-text);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 14px;
     transition: all var(--transition);
     -webkit-user-select: none;
     user-select: none;
@@ -703,79 +779,258 @@
 
   .font-size-display {
     font-size: 13px;
-    color: var(--text-secondary);
-    min-width: 32px;
+    color: var(--card-meta);
+    min-width: 30px;
     text-align: center;
     user-select: none;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 
+  /* ---------- Scrolling page ---------- */
   .reader-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    background: var(--reader-bg);
+    background: var(--page-bg);
     transition: background var(--transition);
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+    padding: 0 20px 60px;
   }
 
-  .reader-content-inner {
-    max-width: 720px;
+  .article-outer {
+    width: 100%;
+    max-width: var(--card-w);
     margin: 0 auto;
-    padding: 48px 40px 80px;
+    position: relative;
+  }
+
+  /* ---------- Breadcrumbs ---------- */
+  .crumbs {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 18px 4px 12px;
+    font-size: 12.5px;
+    color: var(--card-meta);
+    flex-wrap: wrap;
+  }
+  .crumbs a { color: var(--card-meta); text-decoration: none; cursor: pointer; transition: color var(--transition); }
+  .crumbs a:hover { color: var(--accent); }
+  .crumbs .sep { opacity: 0.5; }
+  .crumbs .cur {
+    color: var(--reader-text);
+    font-weight: 600;
+    max-width: 46%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ---------- The article card ---------- */
+  .article {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: 4px;
+    box-shadow: 0 1px 5px var(--card-shadow);
+    padding: 0 58px;
+    transition: background var(--transition);
+  }
+
+  .bookmark-ribbon {
+    position: absolute;
+    top: -1px; right: 34px;
+    width: 26px; height: 38px;
+    padding: 0; border: none; background: none;
+    cursor: pointer;
+    color: #bfbfbf;
+    transition: color var(--transition), transform var(--transition);
+  }
+  [data-skin="dark"] .bookmark-ribbon { color: #55504a; }
+  .bookmark-ribbon svg { width: 100%; height: 100%; display: block; }
+  .bookmark-ribbon:hover { transform: translateY(2px); }
+  .bookmark-ribbon.on { color: var(--accent); }
+
+  .article-hd {
+    padding: 20px 0 15px;
+    border-bottom: 1px solid var(--card-line);
+  }
+
+  .article-title {
+    margin: 0;
+    padding: 6px 44px 12px 0;
+    color: var(--reader-text);
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.45;
+    font-family: "Noto Serif SC", "Source Han Serif CN", Georgia, serif;
+    word-break: break-word;
+  }
+
+  .article-desc {
+    color: var(--card-meta);
+    font-size: 12px;
+    line-height: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 20px;
+  }
+
+  .article-content {
+    padding: 26px 0 10px;
     color: var(--reader-text);
     font-size: 18px;
     line-height: 1.95;
     letter-spacing: 0.01em;
-    transition: font-size var(--transition);
     font-family: "Noto Serif SC", "Source Han Serif CN", "Songti SC", Georgia, serif;
+    transition: font-size var(--transition);
   }
 
-  .reader-content-inner h2 {
-    font-size: 1.45em;
-    font-weight: 700;
-    color: var(--accent);
-    margin-bottom: 32px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid var(--border);
-    line-height: 1.4;
-  }
-
-  .reader-content-inner p {
-    margin-bottom: 0.9em;
+  .article-content p {
     text-indent: 2em;
+    margin: 0 0 0.4em;
     text-align: justify;
   }
 
-  /* Chapter nav at bottom */
-  .chapter-nav {
+  .article-content .load-state {
+    text-align: center;
+    text-indent: 0;
+    padding: 60px 0;
+    color: var(--card-meta);
+    font-size: 15px;
+  }
+
+  /* ---------- Bottom chapter nav (SFACG .fn-btn) ---------- */
+  .fn-btn {
     display: flex;
-    justify-content: space-between;
-    margin-top: 48px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    gap: 12px;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 0 30px;
+    border-top: 1px solid var(--card-line);
+    margin-top: 18px;
   }
 
-  .nav-btn {
-    padding: 12px 28px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    color: var(--text);
-    cursor: pointer;
-    font-size: 14px;
+  .fn-pill {
+    min-width: 88px;
+    height: 32px;
+    padding: 0 16px;
+    border: 1px solid var(--card-line);
+    border-radius: 32px;
+    background: transparent;
+    color: var(--reader-text);
+    font-size: 12.5px;
     font-family: inherit;
-    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: all var(--transition);
-    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
   }
 
-  .nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-  .nav-btn:active:not(:disabled) { transform: scale(0.97); }
-  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .fn-pill:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .fn-pill:disabled { opacity: 0.35; cursor: default; }
+  .fn-btn .fn-spacer { flex: 1; }
+
+  /* ---------- Floating rails ---------- */
+  .left-float-bar {
+    position: absolute;
+    top: 78px;
+    left: 50%;
+    margin-left: max(calc(var(--card-w) / -2 - 84px), calc(-50vw + 16px));
+    z-index: 12;
+  }
+
+  .page-btn-area {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    margin-left: min(calc(var(--card-w) / 2 + 16px), calc(50vw - 84px));
+    z-index: 12;
+  }
+
+  .rail {
+    width: 68px;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px var(--card-shadow), 0 0 0 1px var(--card-line);
+    display: none;
+  }
+
+  .rail-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 68px; height: 60px;
+    background: var(--card-bg);
+    color: var(--card-meta);
+    border: none;
+    border-bottom: 1px solid var(--card-line);
+    cursor: pointer;
+    transition: color var(--transition), background var(--transition);
+    position: relative;
+    padding: 0;
+  }
+
+  .rail-btn:last-child { border-bottom: none; }
+  .rail-btn svg { width: 23px; height: 23px; pointer-events: none; }
+  .rail-btn:hover { color: var(--accent); background: var(--accent-glow); }
+  .rail-btn.on { color: var(--accent); }
+  .rail-btn:disabled { opacity: 0.3; cursor: default; }
+  .rail-btn:disabled:hover { color: var(--card-meta); background: var(--card-bg); }
+
+  .rail-btn[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 100%; top: 50%;
+    transform: translateY(-50%) translateX(10px);
+    background: rgba(38, 32, 26, 0.92);
+    color: #fff;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s;
+    z-index: 2;
+  }
+  .rail-btn:hover[data-tip]::after { opacity: 1; }
+
+  .page-btn-area .rail-btn[data-tip]::after {
+    left: auto; right: 100%;
+    transform: translateY(-50%) translateX(-10px);
+  }
+
+  /* Reading progress */
+  .progress-bar {
+    height: 3px;
+    background: var(--card-line);
+    flex-shrink: 0;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-light));
+    width: 0%;
+    transition: width 0.15s linear;
+  }
+
+  /* Sidebar overlay */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 29;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+
+  .sidebar-overlay.active { display: block; }
 
   /* ========== Loading / Error ========== */
   .loading-screen {
@@ -819,56 +1074,41 @@
 
   .retry-btn:hover { background: var(--accent); color: #fff; }
 
-  /* Sidebar overlay */
-  .sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 9;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    /* Prevent scroll-through on iOS */
-    touch-action: none;
-    overscroll-behavior: none;
+  /* ========== Responsive: wide desktop — show floating rails ========== */
+  @media (min-width: 1240px) {
+    .rail { display: block; }
   }
 
-  .sidebar-overlay.active { display: block; }
-
-  /* Reading progress */
-  .progress-bar {
-    height: 3px;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-
-  .progress-bar-inner {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-light));
-    width: 0%;
-    transition: width 0.15s linear;
-  }
-
-  /* ========== Responsive: Tablet (portrait & landscape) ========== */
-  @media (max-width: 1024px) {
-    .sidebar {
+  /* ========== Responsive: below rail width ========== */
+  @media (max-width: 1239px) {
+    .left-float-bar { position: static; margin-left: 0; }
+    .page-btn-area { display: none; }
+    /* settings becomes a bottom sheet */
+    .setting-box {
       position: fixed;
-      left: 0; top: 0;
-      height: 100%;
-      transform: translateX(-100%);
-      box-shadow: var(--shadow-lg);
-      overscroll-behavior: contain;
+      left: 0; right: 0; top: auto;
+      bottom: calc(52px + env(safe-area-inset-bottom));
+      width: auto;
+      max-height: 70vh;
+      overflow-y: auto;
+      border-radius: 16px 16px 0 0;
+      border-left: none; border-right: none; border-bottom: none;
+      box-shadow: 0 -6px 26px rgba(0, 0, 0, 0.22);
+      z-index: 26;
+      padding-bottom: 22px;
     }
-    .sidebar.open { transform: translateX(0); }
-    .btn-toggle-sidebar { display: flex; }
-    .reader-content-inner { padding: 40px 32px 72px; }
+    .set-row .set-title { width: 84px; }
+  }
+
+  /* ========== Responsive: Tablet ========== */
+  @media (max-width: 1024px) {
+    .article { padding: 0 36px; }
+    .crumbs { padding: 14px 4px 10px; }
   }
 
   /* Tablet landscape — 2-column links */
   @media (min-width: 600px) and (max-width: 1024px) {
-    .links-list {
-      grid-template-columns: 1fr 1fr;
-    }
+    .links-list { grid-template-columns: 1fr 1fr; }
   }
 
   /* ========== Responsive: Mobile ========== */
@@ -881,24 +1121,31 @@
     .book-card-body { padding: 12px 12px 14px; }
     .book-card .book-title { font-size: 14px; }
     .book-search-input { padding: 12px 40px 12px 40px; font-size: 14px; }
-    .reader-content-inner { padding: 28px 18px 56px; font-size: 17px; }
-    .reader-topbar { padding: 0 16px; height: 52px; }
-    .ctrl-btn { width: 38px; height: 38px; }
-    .btn-toggle-sidebar { width: 38px; height: 38px; }
-    .nav-btn { padding: 11px 18px; font-size: 13px; }
-    .link-card { padding: 14px 16px; gap: 12px; }
-    .drop-zone { padding: 28px 16px; }
-    .sidebar { width: 280px; min-width: 280px; }
-    /* Extra bottom padding for iOS home indicator */
-    .reader-content-inner { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
-    .chapter-nav { padding-bottom: env(safe-area-inset-bottom); }
+    .book-search-clear { right: 12px; }
+
+    .reader-content { padding: 0 10px 40px; }
+    .article { padding: 0 20px; border-radius: 0; }
+    .article-title { font-size: 20px; padding-right: 38px; }
+    .article-content { padding: 20px 0 6px; font-size: 17px; }
+    .bookmark-ribbon { right: 16px; width: 22px; height: 32px; }
+    .crumbs { padding: 12px 2px 8px; font-size: 12px; }
+    .crumbs .cur { max-width: 40%; }
+    .fn-btn { padding: 18px 0 24px; flex-wrap: wrap; }
+    .fn-pill { min-width: 0; flex: 1; padding: 0 10px; }
+    .fn-btn .fn-spacer { display: none; }
+    .reader-topbar { padding: 0 12px; }
+    .topbar-book { display: none; }
+    .topbar-sep { display: none; }
+    .sidebar { width: 300px; }
+    .set-row { flex-wrap: wrap; min-height: 0; padding: 8px 0; }
+    .set-row .set-title { width: 100%; margin-bottom: 8px; }
   }
 
   /* ========== Responsive: Very small screens ========== */
   @media (max-width: 380px) {
     .book-grid { grid-template-columns: 1fr; }
     .topbar-controls { gap: 4px; }
-    .ctrl-btn { width: 34px; height: 34px; font-size: 13px; }
+    .ctrl-btn { width: 32px; height: 32px; font-size: 13px; }
     .font-size-display { min-width: 24px; font-size: 12px; }
   }
 
@@ -943,13 +1190,14 @@
     user-select: none;
   }
 
+  .mobile-toolbar button svg { width: 22px; height: 22px; }
   .mobile-toolbar button:active { color: var(--accent); }
   .mobile-toolbar button.active-tool { color: var(--accent); }
 
   /* ========== Tap zones (phone chapter nav) ========== */
   .tap-zone {
     position: fixed;
-    top: 56px; bottom: 52px;
+    top: 55px; bottom: 52px;
     width: 60px;
     z-index: 5;
     cursor: pointer;
@@ -973,70 +1221,157 @@
 
   .tap-zone:active .tap-zone-hint { opacity: 0.7; }
 
-  /* ========== Settings panel ========== */
-  .settings-panel {
-    display: none;
-    position: fixed;
-    bottom: calc(52px + env(safe-area-inset-bottom));
-    left: 0; right: 0;
+  /* ========== Settings box (SFACG 设置) ========== */
+  .setting-box {
+    position: absolute;
+    left: 76px; top: 0;
+    width: 404px;
+    padding: 20px 24px 18px;
     background: var(--bg-card);
-    border-top: 1px solid var(--border);
-    padding: 20px 24px;
-    z-index: 8;
-    box-shadow: 0 -4px 20px var(--shadow-md);
-    border-radius: 16px 16px 0 0;
-    transition: transform var(--transition);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 6px 26px rgba(0, 0, 0, 0.18);
+    display: none;
+    z-index: 14;
   }
 
-  .settings-panel.open { display: block; }
+  .setting-box.open { display: block; }
 
-  .setting-row {
+  .setting-box .box-hd {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 0;
+    font-size: 16px;
+    font-weight: 700;
+    padding-bottom: 2px;
   }
 
-  .setting-row + .setting-row { border-top: 1px solid var(--border); }
-
-  .setting-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
+  .set-close {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color var(--transition);
   }
+  .set-close:hover { color: var(--accent); }
 
-  .setting-controls {
+  .set-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    min-height: 48px;
+    font-size: 14px;
   }
 
-  .setting-btn {
-    width: 36px; height: 36px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    color: var(--text);
+  .set-row .set-title {
+    width: 84px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+  }
+
+  .set-row .set-ctl {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex: 1;
+  }
+
+  #skin-row { gap: 9px; flex-wrap: nowrap; }
+
+  /* keep − / 18 / + together when the row wraps */
+  .set-stepper { display: inline-flex; align-items: center; gap: 8px; }
+
+  .skin-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.10);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    font-family: inherit;
-    transition: all var(--transition);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.20);
+    padding: 0;
+    transition: transform var(--transition);
   }
+  .skin-dot:hover { transform: scale(1.1); }
+  .skin-dot .tick {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .skin-dot.selected .tick { opacity: 1; }
+  .skin-dot[data-skin="dark"] .tick { color: #e2854f; }
 
-  .setting-btn:active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .setting-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .set-pill {
+    min-width: 58px;
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .set-pill:hover { color: var(--accent); border-color: var(--accent-light); }
+  .set-pill.selected { color: var(--accent); border-color: var(--accent); }
 
-  .setting-value {
-    min-width: 28px;
+  .set-step {
+    width: 28px; height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .set-step:hover { color: var(--accent); border-color: var(--accent); }
+
+  .set-num {
+    min-width: 30px;
     text-align: center;
     font-size: 13px;
-    font-weight: 600;
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
   }
+
+  .set-foot {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding-top: 14px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+
+  .set-btn {
+    width: 106px; height: 38px;
+    border: 1px solid;
+    border-radius: 40px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .set-btn.save { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .set-btn.save:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
+  .set-btn.cancel { border-color: var(--border); background: transparent; color: var(--text); }
+  .set-btn.cancel:hover { border-color: var(--text-secondary); color: var(--text); }
 
   /* ========== In-chapter text search ========== */
   .text-search-bar {
@@ -1234,21 +1569,24 @@
   :fullscreen .reader-content { height: 100%; }
   :fullscreen .progress-bar { display: none; }
 
-  /* ========== Mobile: show toolbar and tap zones ========== */
-  @media (max-width: 1024px) {
+  /* ========== Mobile toolbar / tap zone visibility ========== */
+  .mobile-toolbar { display: none; }
+  .tap-zone { display: none; }
+
+  @media (max-width: 1239px) {
     .mobile-toolbar { display: flex; }
-    .tap-zone { display: block; }
-    /* Adjust reader content for bottom toolbar */
-    .reader-content { padding-bottom: calc(52px + env(safe-area-inset-bottom)); }
-    /* Hide desktop topbar controls on mobile (moved to bottom toolbar) */
+    /* Room for the bottom toolbar */
+    .reader-content { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    /* Font controls live in the bottom toolbar at this size */
     .topbar-controls { display: none; }
-    .reader-topbar { height: 48px; }
   }
 
-  @media (min-width: 1025px) {
-    .tap-zone { display: none; }
-    .mobile-toolbar { display: none !important; }
-    .settings-panel { display: none !important; }
+  /* Edge tap-to-turn only makes sense on touch devices */
+  @media (max-width: 1024px) and (hover: none) {
+    .tap-zone { display: block; }
+  }
+
+  @media (min-width: 1240px) {
     .bookmarks-panel {
       bottom: 0;
       max-width: 400px;
@@ -1325,6 +1663,8 @@
 <!-- Reader -->
 <div id="reader-screen">
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- Catalog drawer (目录) -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <button class="btn-back" id="btn-back" title="Back to library">&#8592;</button>
@@ -1338,84 +1678,190 @@
     <div class="chapter-list" id="chapter-list"></div>
     <div class="chapter-no-results" id="chapter-no-results">No chapters found</div>
   </aside>
-  <div class="reader-main">
+
+  <div class="reader-main" id="reader-main">
     <div class="reader-topbar">
       <div class="topbar-left">
-        <button class="btn-toggle-sidebar" id="btn-toggle-sidebar">&#9776;</button>
+        <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Contents">&#9776;</button>
+        <span class="topbar-book" id="topbar-book"></span>
+        <span class="topbar-sep">/</span>
         <span class="chapter-title-bar" id="chapter-title-bar"></span>
       </div>
       <div class="topbar-controls">
         <button class="ctrl-btn" id="btn-font-down" title="Decrease font size">A-</button>
         <span class="font-size-display" id="font-size-display">18</span>
         <button class="ctrl-btn" id="btn-font-up" title="Increase font size">A+</button>
-        <button class="ctrl-btn" id="btn-theme" title="Toggle dark mode">&#9790;</button>
+        <button class="ctrl-btn" id="btn-theme" title="Toggle dark reading theme">&#9790;</button>
       </div>
     </div>
     <div class="progress-bar"><div class="progress-bar-inner" id="progress-bar"></div></div>
+
     <div class="reader-content" id="reader-content">
-      <div class="reader-content-inner" id="reader-text"></div>
+      <div class="article-outer">
+        <!-- Breadcrumbs -->
+        <div class="crumbs">
+          <a id="crumb-library">Library</a>
+          <span class="sep">&gt;</span>
+          <a id="crumb-book"></a>
+          <span class="sep">&gt;</span>
+          <span class="cur" id="crumb-chapter"></span>
+        </div>
+
+        <!-- Article card -->
+        <div class="article" id="article">
+          <button class="bookmark-ribbon" id="bookmark-ribbon" title="Bookmark this chapter">
+            <svg viewBox="0 0 26 38" aria-hidden="true"><path d="M0 0h26v38l-13-9.2L0 38z" fill="currentColor"/></svg>
+          </button>
+          <div class="article-hd">
+            <h1 class="article-title" id="article-title"></h1>
+            <div class="article-desc" id="article-desc"></div>
+          </div>
+          <div class="article-content" id="reader-text"></div>
+          <div class="fn-btn">
+            <button class="fn-pill" id="nav-prev">&larr; Previous</button>
+            <button class="fn-pill" id="nav-catalog">Contents</button>
+            <span class="fn-spacer"></span>
+            <button class="fn-pill" id="nav-next">Next &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Left floating rail (SFACG left-float-bar) -->
+    <div class="left-float-bar" id="left-float-bar">
+      <div class="rail" id="rail-left">
+        <button class="rail-btn" id="rail-catalog" data-tip="Contents">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="4.5" cy="6" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-settings" data-tip="Reading settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-bookmark" data-tip="Bookmark chapter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-bookmarks" data-tip="Saved bookmarks">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2.6 15 8.7 21.7 9.7 16.9 14.4 18 21 12 17.9 6 21 7.1 14.4 2.3 9.7 9 8.7 12 2.6"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-search" data-tip="Find in chapter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="M21 21l-4.4-4.4"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-library" data-tip="Back to library">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h5a3.5 3.5 0 0 1 3.5 3.5V20a2.6 2.6 0 0 0-2.6-2.2H2.5z"/><path d="M21.5 4h-5A3.5 3.5 0 0 0 13 7.5V20a2.6 2.6 0 0 1 2.6-2.2h5.9z"/></svg>
+        </button>
+      </div>
+
+      <!-- Settings popover / bottom sheet -->
+      <div class="setting-box" id="setting-box">
+        <div class="box-hd">
+          <span>Reading settings</span>
+          <button class="set-close" id="set-close" title="Close">&times;</button>
+        </div>
+        <div class="set-row">
+          <span class="set-title">Theme</span>
+          <div class="set-ctl" id="skin-row">
+            <button class="skin-dot" data-skin="white"  style="background:#fbfbfb" title="Paper"><span class="tick">&#10003;</span></button>
+            <button class="skin-dot" data-skin="blue"   style="background:#e1f3ff" title="Blue"><span class="tick">&#10003;</span></button>
+            <button class="skin-dot" data-skin="yellow" style="background:#fbf6d9" title="Cream"><span class="tick">&#10003;</span></button>
+            <button class="skin-dot" data-skin="green"  style="background:#dbeed9" title="Green"><span class="tick">&#10003;</span></button>
+            <button class="skin-dot" data-skin="pink"   style="background:#ffdaef" title="Pink"><span class="tick">&#10003;</span></button>
+            <button class="skin-dot" data-skin="gray"   style="background:#eeeced" title="Gray"><span class="tick">&#10003;</span></button>
+            <button class="skin-dot" data-skin="dark"   style="background:#1c1b19" title="Night"><span class="tick">&#10003;</span></button>
+          </div>
+        </div>
+        <div class="set-row">
+          <span class="set-title">Font size</span>
+          <div class="set-ctl">
+            <button class="set-pill" data-fs="16">Small</button>
+            <button class="set-pill" data-fs="18">Medium</button>
+            <button class="set-pill" data-fs="21">Large</button>
+            <span class="set-stepper">
+              <button class="set-step" id="fs-minus" title="Smaller">&minus;</button>
+              <span class="set-num" id="fs-num">18</span>
+              <button class="set-step" id="fs-plus" title="Bigger">+</button>
+            </span>
+          </div>
+        </div>
+        <div class="set-row">
+          <span class="set-title">Typeface</span>
+          <div class="set-ctl">
+            <button class="set-pill" data-ff="serif" style="font-family:'Noto Serif SC',Georgia,serif">Serif</button>
+            <button class="set-pill" data-ff="sans">Sans</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <span class="set-title">Line spacing</span>
+          <div class="set-ctl">
+            <button class="set-pill" data-lh="1.6">Tight</button>
+            <button class="set-pill" data-lh="1.95">Normal</button>
+            <button class="set-pill" data-lh="2.4">Loose</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <span class="set-title">Page width</span>
+          <div class="set-ctl">
+            <button class="set-pill" data-w="small">Narrow</button>
+            <button class="set-pill" data-w="middle">Medium</button>
+            <button class="set-pill" data-w="large">Wide</button>
+          </div>
+        </div>
+        <div class="set-foot">
+          <button class="set-btn save" id="set-save">Save</button>
+          <button class="set-btn cancel" id="set-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right floating rail (SFACG page-btn-area) -->
+    <div class="page-btn-area" id="page-btn-area">
+      <div class="rail" id="rail-right">
+        <button class="rail-btn" id="rail-autoscroll" data-tip="Auto-scroll">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3.5 19.5 12 6 20.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-fullscreen" data-tip="Fullscreen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.5H5.5a2 2 0 0 0-2 2V8m17 0V5.5a2 2 0 0 0-2-2H16m0 17h2.5a2 2 0 0 0 2-2V16M3.5 16v2.5a2 2 0 0 0 2 2H8"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-next" data-tip="Next chapter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-prev" data-tip="Previous chapter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button class="rail-btn" id="rail-top" data-tip="Back to top">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h16M6 15l6-6 6 6"/></svg>
+        </button>
+      </div>
     </div>
   </div>
+
   <!-- Tap zones for phone prev/next -->
   <div class="tap-zone tap-zone-left" id="tap-left"><span class="tap-zone-hint">&#9664;</span></div>
   <div class="tap-zone tap-zone-right" id="tap-right"><span class="tap-zone-hint">&#9654;</span></div>
+
   <!-- Mobile bottom toolbar -->
   <div class="mobile-toolbar" id="mobile-toolbar">
-    <button id="mb-chapters" title="Chapters">&#9776;</button>
-    <button id="mb-search" title="Search text">&#128269;</button>
-    <button id="mb-bookmark" title="Bookmark">&#9734;</button>
-    <button id="mb-bookmarks" title="Bookmarks">&#128278;</button>
-    <button id="mb-settings" title="Settings">&#9881;</button>
+    <button id="mb-chapters" title="Contents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="4.5" cy="6" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>
+    </button>
+    <button id="mb-search" title="Find in chapter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="M21 21l-4.4-4.4"/></svg>
+    </button>
+    <button id="mb-bookmark" title="Bookmark chapter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    </button>
+    <button id="mb-bookmarks" title="Saved bookmarks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2.6 15 8.7 21.7 9.7 16.9 14.4 18 21 12 17.9 6 21 7.1 14.4 2.3 9.7 9 8.7 12 2.6"/></svg>
+    </button>
+    <button id="mb-settings" title="Reading settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
   </div>
-  <!-- Settings panel -->
-  <div class="settings-panel" id="settings-panel">
-    <div class="setting-row">
-      <span class="setting-label">Font size</span>
-      <div class="setting-controls">
-        <button class="setting-btn" id="s-font-down">A-</button>
-        <span class="setting-value" id="s-font-val">18</span>
-        <button class="setting-btn" id="s-font-up">A+</button>
-      </div>
-    </div>
-    <div class="setting-row">
-      <span class="setting-label">Font</span>
-      <div class="setting-controls">
-        <button class="setting-btn" id="s-font-serif" title="Serif" style="font-family:Georgia">Se</button>
-        <button class="setting-btn" id="s-font-sans" title="Sans-serif" style="font-family:sans-serif">Sa</button>
-      </div>
-    </div>
-    <div class="setting-row">
-      <span class="setting-label">Line spacing</span>
-      <div class="setting-controls">
-        <button class="setting-btn" id="s-lh-down">&#8722;</button>
-        <span class="setting-value" id="s-lh-val">1.9</span>
-        <button class="setting-btn" id="s-lh-up">+</button>
-      </div>
-    </div>
-    <div class="setting-row">
-      <span class="setting-label">Theme</span>
-      <div class="setting-controls">
-        <button class="setting-btn" id="s-theme">&#9790;</button>
-      </div>
-    </div>
-    <div class="setting-row">
-      <span class="setting-label">Auto-scroll</span>
-      <div class="setting-controls">
-        <button class="setting-btn" id="s-autoscroll">&#9654;</button>
-      </div>
-    </div>
-    <div class="setting-row">
-      <span class="setting-label">Fullscreen</span>
-      <div class="setting-controls">
-        <button class="setting-btn" id="s-fullscreen">&#9974;</button>
-      </div>
-    </div>
-  </div>
+
   <!-- Bookmarks panel -->
   <div class="bookmarks-panel" id="bookmarks-panel">
     <h3>Bookmarks</h3>
     <div id="bookmarks-list"></div>
   </div>
+
   <!-- Text search bar -->
   <div class="text-search-bar" id="text-search-bar">
     <input type="text" id="text-search-input" placeholder="Search in chapter..." autocomplete="off">
@@ -1424,14 +1870,18 @@
     <button id="text-search-next" title="Next">&#9660;</button>
     <button id="text-search-close" title="Close">&times;</button>
   </div>
+
   <!-- Auto-scroll badge -->
   <div class="autoscroll-badge" id="autoscroll-badge">Auto &#9654; <span id="autoscroll-speed">1x</span></div>
+
   <!-- Shortcuts overlay -->
   <div class="shortcuts-overlay" id="shortcuts-overlay">
     <div class="shortcuts-box">
       <h3>Keyboard Shortcuts</h3>
       <div class="shortcut-row"><span>Previous chapter</span><kbd>&#8592;</kbd></div>
       <div class="shortcut-row"><span>Next chapter</span><kbd>&#8594;</kbd></div>
+      <div class="shortcut-row"><span>Open contents</span><kbd>C</kbd></div>
+      <div class="shortcut-row"><span>Reading settings</span><kbd>S</kbd></div>
       <div class="shortcut-row"><span>Search chapters</span><kbd>Ctrl+F</kbd></div>
       <div class="shortcut-row"><span>Search in text</span><kbd>Ctrl+G</kbd></div>
       <div class="shortcut-row"><span>Jump to chapter #</span><kbd>Ctrl+J</kbd></div>
@@ -1476,36 +1926,91 @@
   const $chapterSearch = document.getElementById('chapter-search');
   const $chapterSearchClear = document.getElementById('chapter-search-clear');
   const $chapterNoResults = document.getElementById('chapter-no-results');
+  // SFACG-style reader chrome
+  const $readerMain   = document.getElementById('reader-main');
+  const $articleTitle = document.getElementById('article-title');
+  const $articleDesc  = document.getElementById('article-desc');
+  const $topbarBook   = document.getElementById('topbar-book');
+  const $crumbBook    = document.getElementById('crumb-book');
+  const $crumbChapter = document.getElementById('crumb-chapter');
+  const $settingBox   = document.getElementById('setting-box');
+  const $ribbon       = document.getElementById('bookmark-ribbon');
 
-  // ============ Theme ============
-  if (darkMode) document.documentElement.setAttribute('data-theme', 'dark');
+  // ============ Reading skin (SFACG 阅读主题) ============
+  const SKINS = ['white', 'blue', 'yellow', 'green', 'pink', 'gray', 'dark'];
+  var skin = localStorage.getItem('reader-skin');
+  if (SKINS.indexOf(skin) < 0) skin = darkMode ? 'dark' : 'white';
+  var lastLightSkin = localStorage.getItem('reader-skin-light');
+  if (SKINS.indexOf(lastLightSkin) < 0 || lastLightSkin === 'dark') lastLightSkin = 'white';
+
+  function applySkin(s) {
+    if (SKINS.indexOf(s) < 0) s = 'white';
+    skin = s;
+    document.documentElement.setAttribute('data-skin', s);
+    if (s === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      darkMode = true;
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      darkMode = false;
+      lastLightSkin = s;
+    }
+    var dots = document.querySelectorAll('.skin-dot');
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].classList.toggle('selected', dots[i].getAttribute('data-skin') === s);
+    }
+    var $t = document.getElementById('btn-theme');
+    if ($t) $t.innerHTML = darkMode ? '&#9788;' : '&#9790;';
+  }
+
+  applySkin(skin);
 
   document.getElementById('btn-theme').addEventListener('click', function () {
-    darkMode = !darkMode;
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : '');
+    applySkin(skin === 'dark' ? lastLightSkin : 'dark');
+    localStorage.setItem('reader-skin', skin);
+    localStorage.setItem('reader-skin-light', lastLightSkin);
     localStorage.setItem('reader-dark', darkMode ? '1' : '0');
   });
+
+  // ============ Page width (SFACG 页面宽度) ============
+  var readerWidth = localStorage.getItem('reader-width') || 'middle';
+  if (['small', 'middle', 'large'].indexOf(readerWidth) < 0) readerWidth = 'middle';
+
+  function applyWidth(w) {
+    readerWidth = w;
+    $readerMain.classList.remove('width-small', 'width-middle', 'width-large');
+    $readerMain.classList.add('width-' + w);
+    var pills = document.querySelectorAll('.set-pill[data-w]');
+    for (var i = 0; i < pills.length; i++) {
+      pills[i].classList.toggle('selected', pills[i].getAttribute('data-w') === w);
+    }
+  }
+  applyWidth(readerWidth);
 
   // ============ Font size ============
   function applyFontSize() {
     $readerText.style.fontSize = fontSize + 'px';
     $fontDisplay.textContent = fontSize;
-    localStorage.setItem('reader-fontsize', fontSize);
+    var $n = document.getElementById('fs-num');
+    if ($n) $n.textContent = fontSize;
+    var pills = document.querySelectorAll('.set-pill[data-fs]');
+    for (var i = 0; i < pills.length; i++) {
+      pills[i].classList.toggle('selected', parseInt(pills[i].getAttribute('data-fs'), 10) === fontSize);
+    }
   }
-  // Apply saved font size on load
-  if (fontSize !== 18) applyFontSize();
+  applyFontSize();
 
   document.getElementById('btn-font-up').addEventListener('click', function () {
-    if (fontSize < 32) { fontSize += 2; applyFontSize(); }
+    if (fontSize < 32) { fontSize += 1; applyFontSize(); localStorage.setItem('reader-fontsize', fontSize); }
   });
   document.getElementById('btn-font-down').addEventListener('click', function () {
-    if (fontSize > 12) { fontSize -= 2; applyFontSize(); }
+    if (fontSize > 12) { fontSize -= 1; applyFontSize(); localStorage.setItem('reader-fontsize', fontSize); }
   });
 
-  // ============ Sidebar toggle (mobile/tablet) ============
+  // ============ Catalog drawer toggle ============
   document.getElementById('btn-toggle-sidebar').addEventListener('click', function () {
-    $sidebar.classList.add('open');
-    $overlay.classList.add('active');
+    if ($sidebar.classList.contains('open')) closeSidebar();
+    else openSidebar();
   });
   function closeSidebar() {
     $sidebar.classList.remove('open');
@@ -1520,6 +2025,11 @@
 
   // ============ Chapter search ============
   var searchTimer = null;
+
+  // One row of the catalog: "12  Chapter title"
+  function chapterItemInner(i, titleHtml) {
+    return '<span class="ci-num">' + (i + 1) + '</span><span class="ci-title">' + titleHtml + '</span>';
+  }
 
   function filterChapters(query) {
     query = query.trim();
@@ -1536,19 +2046,23 @@
       if (query && !title.toLowerCase().includes(qLower)) continue;
 
       var el = document.createElement('div');
-      el.className = 'chapter-item' + (i === currentChapterIndex ? ' active' : '');
+      el.className = 'chapter-item' +
+        (i === currentChapterIndex ? ' active' : '') +
+        (isChapterBookmarked(i) ? ' bookmarked' : '');
       el.setAttribute('data-idx', i);
 
+      var titleHtml;
       if (query) {
         var lower = title.toLowerCase();
         var matchIdx = lower.indexOf(qLower);
-        el.innerHTML =
+        titleHtml =
           escapeHtml(title.slice(0, matchIdx)) +
           '<span class="highlight">' + escapeHtml(title.slice(matchIdx, matchIdx + query.length)) + '</span>' +
           escapeHtml(title.slice(matchIdx + query.length));
       } else {
-        el.textContent = title;
+        titleHtml = escapeHtml(title);
       }
+      el.innerHTML = chapterItemInner(i, titleHtml);
       frag.appendChild(el);
       visibleCount++;
     }
@@ -1887,10 +2401,16 @@
 
   // ============ Open a book ============
   async function openBook(book, resumeChapter, resumeScroll) {
+    var displayName = book.name.replace(/\.(txt|epub)$/i, '');
     $welcome.style.display = 'none';
     $reader.classList.add('active');
-    $readerText.innerHTML = '<div style="text-align:center;padding:60px 0;"><div class="spinner" style="margin:0 auto 16px;"></div>Loading book...</div>';
-    $sidebarName.textContent = book.name.replace(/\.(txt|epub)$/i, '');
+    $readerText.innerHTML = '<div class="load-state"><div class="spinner" style="margin:0 auto 16px;"></div>Loading book...</div>';
+    $sidebarName.textContent = displayName;
+    $topbarBook.textContent = displayName;
+    $crumbBook.textContent = displayName;
+    $articleTitle.textContent = displayName;
+    $articleDesc.innerHTML = '';
+    $crumbChapter.textContent = '';
     $chapterBar.textContent = '';
     $chapterList.innerHTML = '';
     $chapterSearch.value = '';
@@ -1960,7 +2480,7 @@
         });
       }
     } catch (e) {
-      $readerText.innerHTML = '<div class="error-msg">Failed to load book: ' + escapeHtml(e.message) + '</div>';
+      $readerText.innerHTML = '<div class="load-state"><div class="error-msg">Failed to load book: ' + escapeHtml(e.message) + '</div></div>';
     }
   }
 
@@ -2251,9 +2771,9 @@
     var frag = document.createDocumentFragment();
     for (var i = 0; i < chapters.length; i++) {
       var el = document.createElement('div');
-      el.className = 'chapter-item';
-      el.textContent = chapters[i].title;
+      el.className = 'chapter-item' + (isChapterBookmarked(i) ? ' bookmarked' : '');
       el.setAttribute('data-idx', i);
+      el.innerHTML = chapterItemInner(i, escapeHtml(chapters[i].title));
       frag.appendChild(el);
     }
     $chapterList.innerHTML = '';
@@ -2272,12 +2792,25 @@
   });
 
   // ============ Navigate chapters ============
+  function updateNavState() {
+    var atFirst = currentChapterIndex <= 0;
+    var atLast = currentChapterIndex >= chapters.length - 1;
+    ['nav-prev', 'rail-prev'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = atFirst;
+    });
+    ['nav-next', 'rail-next'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = atLast;
+    });
+  }
+
   function goToChapter(idx) {
     if (idx < 0 || idx >= chapters.length) return;
     currentChapterIndex = idx;
     const ch = chapters[idx];
 
-    // Highlight sidebar — use data-idx to find active item efficiently
+    // Highlight the catalog row — use data-idx to find it efficiently
     var prev = $chapterList.querySelector('.chapter-item.active');
     if (prev) prev.classList.remove('active');
     var cur = $chapterList.querySelector('.chapter-item[data-idx="' + idx + '"]');
@@ -2286,22 +2819,30 @@
       cur.scrollIntoView({ block: 'nearest' });
     }
 
-    // Render content
+    // ---- Article header ----
     $chapterBar.textContent = ch.title;
-    let html = '<h2>' + escapeHtml(ch.title) + '</h2>';
-    const paragraphs = ch.content.split(/\n+/);
+    $articleTitle.textContent = ch.title;
+    $crumbChapter.textContent = ch.title;
+
+    var body = ch.content || '';
+    var charCount = body.replace(/\s+/g, '').length;
+    var minutes = Math.max(1, Math.round(charCount / 450));
+    $articleDesc.innerHTML =
+      '<span class="text">Chapter ' + (idx + 1) + ' of ' + chapters.length + '</span>' +
+      '<span class="text">' + charCount.toLocaleString() + ' characters</span>' +
+      '<span class="text">about ' + minutes + ' min read</span>';
+
+    // ---- Body ----
+    var html = '';
+    var paragraphs = body.split(/\n+/);
     paragraphs.forEach(function (p) {
       p = p.trim();
       if (p) html += '<p>' + escapeHtml(p) + '</p>';
     });
-
-    // Chapter navigation buttons
-    html += '<div class="chapter-nav">';
-    html += '<button class="nav-btn" id="nav-prev"' + (idx === 0 ? ' disabled' : '') + '>&larr; Previous</button>';
-    html += '<button class="nav-btn" id="nav-next"' + (idx === chapters.length - 1 ? ' disabled' : '') + '>Next &rarr;</button>';
-    html += '</div>';
-
     $readerText.innerHTML = html;
+
+    updateNavState();
+
     $readerContent.scrollTop = 0;
     $progressBar.style.width = '0%';
 
@@ -2310,10 +2851,18 @@
     if (currentBook && !suppressPopState) {
       updateUrl(currentBook.name, idx);
     }
-
-    document.getElementById('nav-prev').addEventListener('click', function () { goToChapter(currentChapterIndex - 1); });
-    document.getElementById('nav-next').addEventListener('click', function () { goToChapter(currentChapterIndex + 1); });
   }
+
+  // Static chapter-nav buttons (bottom of the article card)
+  document.getElementById('nav-prev').addEventListener('click', function () { goToChapter(currentChapterIndex - 1); });
+  document.getElementById('nav-next').addEventListener('click', function () { goToChapter(currentChapterIndex + 1); });
+  document.getElementById('nav-catalog').addEventListener('click', function () { openSidebar(); });
+
+  // Breadcrumb links
+  document.getElementById('crumb-library').addEventListener('click', function () {
+    document.getElementById('btn-back').click();
+  });
+  $crumbBook.addEventListener('click', function () { openSidebar(); });
 
   // (Keyboard shortcuts defined below, after all features are set up)
 
@@ -2795,84 +3344,169 @@
     $linksList.appendChild(frag);
   }
 
-  // ============ Reading settings (font family, line height) ============
+  // ============ Reading settings (typeface, line height) ============
   var fontFamily = localStorage.getItem('reader-font') || 'serif';
   var lineHeight = parseFloat(localStorage.getItem('reader-lh')) || 1.95;
 
   function applyReaderSettings() {
     var ff = fontFamily === 'sans'
-      ? '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif'
-      : '"Noto Serif SC", "Source Han Serif CN", Georgia, serif';
+      ? '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif'
+      : '"Noto Serif SC", "Source Han Serif CN", "Songti SC", Georgia, serif';
     $readerText.style.fontFamily = ff;
     $readerText.style.lineHeight = lineHeight;
-    var $sFontVal = document.getElementById('s-font-val');
-    var $sLhVal = document.getElementById('s-lh-val');
-    if ($sFontVal) $sFontVal.textContent = fontSize;
-    if ($sLhVal) $sLhVal.textContent = lineHeight.toFixed(1);
-    // Highlight active font button
-    var $serif = document.getElementById('s-font-serif');
-    var $sans = document.getElementById('s-font-sans');
-    if ($serif) $serif.classList.toggle('active', fontFamily === 'serif');
-    if ($sans) $sans.classList.toggle('active', fontFamily === 'sans');
-    localStorage.setItem('reader-font', fontFamily);
-    localStorage.setItem('reader-lh', lineHeight);
+
+    var ffPills = document.querySelectorAll('.set-pill[data-ff]');
+    for (var i = 0; i < ffPills.length; i++) {
+      ffPills[i].classList.toggle('selected', ffPills[i].getAttribute('data-ff') === fontFamily);
+    }
+    var lhPills = document.querySelectorAll('.set-pill[data-lh]');
+    for (var j = 0; j < lhPills.length; j++) {
+      lhPills[j].classList.toggle('selected',
+        Math.abs(parseFloat(lhPills[j].getAttribute('data-lh')) - lineHeight) < 0.01);
+    }
   }
 
   applyReaderSettings();
 
-  // Settings panel buttons
-  document.getElementById('s-font-up').addEventListener('click', function () {
-    if (fontSize < 32) { fontSize += 2; applyFontSize(); applyReaderSettings(); }
-  });
-  document.getElementById('s-font-down').addEventListener('click', function () {
-    if (fontSize > 12) { fontSize -= 2; applyFontSize(); applyReaderSettings(); }
-  });
-  document.getElementById('s-font-serif').addEventListener('click', function () {
-    fontFamily = 'serif'; applyReaderSettings();
-  });
-  document.getElementById('s-font-sans').addEventListener('click', function () {
-    fontFamily = 'sans'; applyReaderSettings();
-  });
-  document.getElementById('s-lh-up').addEventListener('click', function () {
-    if (lineHeight < 3.0) { lineHeight = Math.round((lineHeight + 0.2) * 10) / 10; applyReaderSettings(); }
-  });
-  document.getElementById('s-lh-down').addEventListener('click', function () {
-    if (lineHeight > 1.2) { lineHeight = Math.round((lineHeight - 0.2) * 10) / 10; applyReaderSettings(); }
-  });
-  document.getElementById('s-theme').addEventListener('click', function () {
-    document.getElementById('btn-theme').click();
+  // ============ Settings box (SFACG 设置) ============
+  // Changes preview live; "Save" keeps them, "Cancel"/× rolls back to the
+  // state the box was opened with.
+  var settingsSnapshot = null;
+
+  function persistSettings() {
+    localStorage.setItem('reader-skin', skin);
+    localStorage.setItem('reader-skin-light', lastLightSkin);
+    localStorage.setItem('reader-dark', darkMode ? '1' : '0');
+    localStorage.setItem('reader-width', readerWidth);
+    localStorage.setItem('reader-fontsize', fontSize);
+    localStorage.setItem('reader-font', fontFamily);
+    localStorage.setItem('reader-lh', lineHeight);
+  }
+
+  function openSettings() {
+    closeAllPanels();
+    settingsSnapshot = {
+      skin: skin, fontSize: fontSize, fontFamily: fontFamily,
+      lineHeight: lineHeight, width: readerWidth
+    };
+    $settingBox.classList.add('open');
+    document.getElementById('rail-settings').classList.add('on');
+    document.getElementById('mb-settings').classList.add('active-tool');
+    applyFontSize();
+    applyReaderSettings();
+    applySkin(skin);
+    applyWidth(readerWidth);
+  }
+
+  // revert === true  -> roll back to the snapshot
+  // revert === false -> keep and persist
+  function closeSettings(revert) {
+    if (!$settingBox.classList.contains('open')) return;
+    if (revert && settingsSnapshot) {
+      fontSize = settingsSnapshot.fontSize;
+      fontFamily = settingsSnapshot.fontFamily;
+      lineHeight = settingsSnapshot.lineHeight;
+      applySkin(settingsSnapshot.skin);
+      applyWidth(settingsSnapshot.width);
+      applyFontSize();
+      applyReaderSettings();
+    } else {
+      persistSettings();
+    }
+    settingsSnapshot = null;
+    $settingBox.classList.remove('open');
+    document.getElementById('rail-settings').classList.remove('on');
+    document.getElementById('mb-settings').classList.remove('active-tool');
+  }
+
+  function toggleSettings() {
+    if ($settingBox.classList.contains('open')) closeSettings(false);
+    else openSettings();
+  }
+
+  // Theme swatches
+  document.getElementById('skin-row').addEventListener('click', function (e) {
+    var b = e.target.closest('.skin-dot');
+    if (b) applySkin(b.getAttribute('data-skin'));
   });
 
-  // ============ Mobile toolbar panels ============
-  var $settingsPanel = document.getElementById('settings-panel');
+  // Pills: font size / typeface / line height / page width
+  $settingBox.addEventListener('click', function (e) {
+    var p = e.target.closest('.set-pill');
+    if (!p) return;
+    if (p.hasAttribute('data-fs')) { fontSize = parseInt(p.getAttribute('data-fs'), 10); applyFontSize(); }
+    else if (p.hasAttribute('data-ff')) { fontFamily = p.getAttribute('data-ff'); applyReaderSettings(); }
+    else if (p.hasAttribute('data-lh')) { lineHeight = parseFloat(p.getAttribute('data-lh')); applyReaderSettings(); }
+    else if (p.hasAttribute('data-w')) { applyWidth(p.getAttribute('data-w')); }
+  });
+
+  document.getElementById('fs-minus').addEventListener('click', function () {
+    if (fontSize > 12) { fontSize -= 1; applyFontSize(); }
+  });
+  document.getElementById('fs-plus').addEventListener('click', function () {
+    if (fontSize < 32) { fontSize += 1; applyFontSize(); }
+  });
+
+  document.getElementById('set-save').addEventListener('click', function () { closeSettings(false); });
+  document.getElementById('set-cancel').addEventListener('click', function () { closeSettings(true); });
+  document.getElementById('set-close').addEventListener('click', function () { closeSettings(true); });
+
+  // ============ Panels ============
   var $bookmarksPanel = document.getElementById('bookmarks-panel');
 
   function closeAllPanels() {
-    $settingsPanel.classList.remove('open');
     $bookmarksPanel.classList.remove('open');
+    document.getElementById('rail-bookmarks').classList.remove('on');
+    document.getElementById('mb-bookmarks').classList.remove('active-tool');
+    closeSettings(false);
   }
 
-  document.getElementById('mb-chapters').addEventListener('click', function () {
+  function openSidebar() {
     closeAllPanels();
     $sidebar.classList.add('open');
     $overlay.classList.add('active');
-  });
+  }
 
-  document.getElementById('mb-settings').addEventListener('click', function () {
-    var isOpen = $settingsPanel.classList.contains('open');
-    closeAllPanels();
-    if (!isOpen) { $settingsPanel.classList.add('open'); applyReaderSettings(); }
-  });
-
-  document.getElementById('mb-bookmarks').addEventListener('click', function () {
+  function toggleBookmarksPanel() {
     var isOpen = $bookmarksPanel.classList.contains('open');
     closeAllPanels();
-    if (!isOpen) { $bookmarksPanel.classList.add('open'); renderBookmarks(); }
+    if (!isOpen) {
+      $bookmarksPanel.classList.add('open');
+      document.getElementById('rail-bookmarks').classList.add('on');
+      document.getElementById('mb-bookmarks').classList.add('active-tool');
+      renderBookmarks();
+    }
+  }
+
+  // ============ Left rail (SFACG left-float-bar) ============
+  document.getElementById('rail-catalog').addEventListener('click', openSidebar);
+  document.getElementById('rail-settings').addEventListener('click', toggleSettings);
+  document.getElementById('rail-bookmark').addEventListener('click', function () { toggleBookmark(); });
+  document.getElementById('rail-bookmarks').addEventListener('click', toggleBookmarksPanel);
+  document.getElementById('rail-search').addEventListener('click', function () {
+    closeAllPanels();
+    openTextSearch();
+  });
+  document.getElementById('rail-library').addEventListener('click', function () {
+    document.getElementById('btn-back').click();
+  });
+  document.getElementById('bookmark-ribbon').addEventListener('click', function () { toggleBookmark(); });
+
+  // ============ Right rail (SFACG page-btn-area) ============
+  document.getElementById('rail-prev').addEventListener('click', function () { goToChapter(currentChapterIndex - 1); });
+  document.getElementById('rail-next').addEventListener('click', function () { goToChapter(currentChapterIndex + 1); });
+  document.getElementById('rail-top').addEventListener('click', function () {
+    $readerContent.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  // Close panels when tapping reader content
+  // ============ Mobile bottom toolbar ============
+  document.getElementById('mb-chapters').addEventListener('click', openSidebar);
+  document.getElementById('mb-settings').addEventListener('click', toggleSettings);
+  document.getElementById('mb-bookmarks').addEventListener('click', toggleBookmarksPanel);
+
+  // Close panels when tapping the page body
   $readerContent.addEventListener('click', function (e) {
-    if (e.target.closest('.chapter-nav')) return;
+    if (e.target.closest('.fn-btn')) return;
     closeAllPanels();
   });
 
@@ -2941,11 +3575,15 @@
     return currentBook ? currentBook.name : null;
   }
 
-  function isCurrentChapterBookmarked() {
+  function isChapterBookmarked(i) {
     var key = getBookmarkKey();
     if (!key) return false;
     var bm = getBookmarks();
-    return bm[key] && bm[key].includes(currentChapterIndex);
+    return !!(bm[key] && bm[key].indexOf(i) >= 0);
+  }
+
+  function isCurrentChapterBookmarked() {
+    return isChapterBookmarked(currentChapterIndex);
   }
 
   function toggleBookmark() {
@@ -2958,17 +3596,20 @@
     else bm[key].push(currentChapterIndex);
     saveBookmarks(bm);
     updateBookmarkBtn();
+    if ($bookmarksPanel.classList.contains('open')) renderBookmarks();
   }
 
+  // Reflect bookmark state on the corner ribbon, both rails, the mobile
+  // toolbar and the matching catalog row.
   function updateBookmarkBtn() {
+    var on = isCurrentChapterBookmarked();
     var $mb = document.getElementById('mb-bookmark');
-    if (isCurrentChapterBookmarked()) {
-      $mb.innerHTML = '&#9733;';
-      $mb.classList.add('active-tool');
-    } else {
-      $mb.innerHTML = '&#9734;';
-      $mb.classList.remove('active-tool');
-    }
+    var $rail = document.getElementById('rail-bookmark');
+    if ($mb) $mb.classList.toggle('active-tool', on);
+    if ($rail) $rail.classList.toggle('on', on);
+    if ($ribbon) $ribbon.classList.toggle('on', on);
+    var item = $chapterList.querySelector('.chapter-item[data-idx="' + currentChapterIndex + '"]');
+    if (item) item.classList.toggle('bookmarked', on);
   }
 
   document.getElementById('mb-bookmark').addEventListener('click', function () {
@@ -3126,14 +3767,14 @@
     }, 50);
     $autoScrollBadge.classList.add('visible');
     document.getElementById('autoscroll-speed').textContent = autoScrollSpeed + 'x';
-    document.getElementById('s-autoscroll').classList.add('active');
+    document.getElementById('rail-autoscroll').classList.add('on');
   }
 
   function stopAutoScroll() {
     clearInterval(autoScrollInterval);
     autoScrollInterval = null;
     $autoScrollBadge.classList.remove('visible');
-    document.getElementById('s-autoscroll').classList.remove('active');
+    document.getElementById('rail-autoscroll').classList.remove('on');
   }
 
   function toggleAutoScroll() {
@@ -3141,7 +3782,7 @@
     else startAutoScroll();
   }
 
-  document.getElementById('s-autoscroll').addEventListener('click', toggleAutoScroll);
+  document.getElementById('rail-autoscroll').addEventListener('click', toggleAutoScroll);
   $autoScrollBadge.addEventListener('click', function () {
     autoScrollSpeed = autoScrollSpeed >= 5 ? 1 : autoScrollSpeed + 1;
     document.getElementById('autoscroll-speed').textContent = autoScrollSpeed + 'x';
@@ -3160,7 +3801,10 @@
     }
   }
 
-  document.getElementById('s-fullscreen').addEventListener('click', toggleFullscreen);
+  document.getElementById('rail-fullscreen').addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', function () {
+    document.getElementById('rail-fullscreen').classList.toggle('on', !!document.fullscreenElement);
+  });
 
   // Double-tap to toggle fullscreen
   var lastTapTime = 0;
@@ -3245,12 +3889,9 @@
     // Ctrl/Cmd+F — chapter search
     if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
       e.preventDefault();
+      openSidebar();
       $chapterSearch.focus();
       $chapterSearch.select();
-      if (window.innerWidth <= 1024) {
-        $sidebar.classList.add('open');
-        $overlay.classList.add('active');
-      }
       return;
     }
 
@@ -3277,6 +3918,7 @@
       }
       closeSidebar();
       closeAllPanels();
+      $shortcutsOverlay.classList.remove('open');
       return;
     }
 
@@ -3287,6 +3929,15 @@
 
     // B — toggle bookmark
     if (e.key === 'b' || e.key === 'B') { toggleBookmark(); return; }
+
+    // C — contents drawer
+    if (e.key === 'c' || e.key === 'C') {
+      if ($sidebar.classList.contains('open')) closeSidebar(); else openSidebar();
+      return;
+    }
+
+    // S — reading settings
+    if (e.key === 's' || e.key === 'S') { toggleSettings(); return; }
 
     // F — fullscreen
     if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); return; }
@@ -3321,10 +3972,10 @@
       var scale = dist / pinchStartDist;
       var newSize = Math.round(pinchFontStart * scale);
       newSize = Math.max(12, Math.min(32, newSize));
-      if (newSize !== fontSize && newSize % 2 === 0) {
+      if (newSize !== fontSize) {
         fontSize = newSize;
         applyFontSize();
-        applyReaderSettings();
+        localStorage.setItem('reader-fontsize', fontSize);
       }
     }
   }, { passive: true });
@@ -3336,6 +3987,7 @@
   goToChapter = function (idx) {
     origGoToChapter(idx);
     updateBookmarkBtn();
+    updateNavState();
     closeTextSearch();
     stopAutoScroll();
     requestWakeLock();
