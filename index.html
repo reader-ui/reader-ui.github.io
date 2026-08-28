@@ -28,6 +28,12 @@
     --radius-sm: 8px;
     --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* ---- SFACG site chrome (main page) ---- */
+    --header-bg: #e29464;
+    --subbar-bg: #fdf0e8;
+    --subbar-line: #f0dbcc;
+    --subbar-fg: #a2703f;
+
     /* ---- reading surface: default "white" skin ---- */
     --page-bg: #f1f1f1;
     --card-bg: #fbfbfb;
@@ -81,6 +87,10 @@
     --chapter-hover: rgba(226, 133, 79, 0.10);
     --scrollbar-thumb: #4a4540;
     --scrollbar-track: transparent;
+    --header-bg: #241f1b;
+    --subbar-bg: #1a1917;
+    --subbar-line: #33302c;
+    --subbar-fg: #948b7f;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -112,128 +122,256 @@
   ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-  /* ========== Welcome Screen ========== */
+  /* ==================================================================
+     Main page — SFACG (book.sfacg.com) style chrome
+     Header bar #e29464 / 80px, peach sub-bar, common-title sections,
+     4:5 covers in a flat story-list grid with a dark hover info layer.
+     ================================================================== */
+
   #welcome-screen {
     display: flex;
     flex-direction: column;
-    align-items: center;
     height: 100%;
-    padding: 48px 40px 60px;
-    text-align: center;
+    overflow: hidden;
+    text-align: left;
+  }
+
+  /* ---------- Top bar ---------- */
+  .site-header {
+    flex-shrink: 0;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    padding: 0 26px;
+    background: var(--header-bg);
+    color: #fff;
+    position: relative;
+    z-index: 5;
+  }
+
+  .site-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 24px;
+    flex-shrink: 0;
+  }
+
+  .site-logo .mark {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 23px;
+    flex-shrink: 0;
+  }
+
+  .site-logo .word { line-height: 1.2; min-width: 0; }
+
+  .site-logo .word b {
+    display: block;
+    font-size: 20px;
+    font-weight: 800;
+    font-family: "Noto Serif SC", Georgia, serif;
+    white-space: nowrap;
+  }
+
+  .site-logo .word span {
+    display: block;
+    font-size: 10.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.78;
+    white-space: nowrap;
+  }
+
+  .site-nav { display: flex; align-self: stretch; }
+
+  .nav-a {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 22px;
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-family: inherit;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: background var(--transition), opacity var(--transition);
+  }
+
+  .nav-a .icn { font-size: 18px; line-height: 1; }
+  .nav-a .text { font-size: 15px; font-weight: 600; white-space: nowrap; }
+
+  .nav-a .count {
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.22);
+    margin-left: 5px;
+  }
+
+  .nav-a:hover { opacity: 1; background: rgba(255, 255, 255, 0.10); }
+  .nav-a.active { opacity: 1; background: rgba(255, 255, 255, 0.15); }
+
+  .nav-a.active::after {
+    content: "";
+    position: absolute;
+    left: 18px; right: 18px; bottom: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: #fff;
+  }
+
+  .header-spacer { flex: 1; }
+  .header-tools { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+
+  .hdr-btn {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 19px;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+    transition: all var(--transition);
+  }
+
+  .hdr-btn:hover { background: #fff; color: var(--accent); border-color: #fff; }
+  .hdr-btn.icon-only { width: 38px; padding: 0; font-size: 16px; }
+
+  /* ---------- Peach sub-bar ---------- */
+  .site-subbar {
+    flex-shrink: 0;
+    height: 40px;
+    padding: 0 26px;
+    background: var(--subbar-bg);
+    border-bottom: 1px solid var(--subbar-line);
+    color: var(--subbar-fg);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .site-subbar::-webkit-scrollbar { display: none; }
+  .site-subbar b { color: var(--accent); font-weight: 700; }
+  .subbar-sep { width: 1px; height: 14px; background: var(--subbar-line); flex-shrink: 0; }
+
+  .subbar-resume {
+    margin-left: auto;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--accent-light);
+    background: var(--bg-card);
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .subbar-resume.visible { display: inline-flex; }
+  .subbar-resume:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .subbar-resume .rs-name {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ---------- Scroll body ---------- */
+  .site-body {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
   }
 
-  #welcome-screen .logo {
-    font-size: 56px;
-    margin-bottom: 6px;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
+  .site-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 24px 26px 64px;
   }
 
-  #welcome-screen h1 {
-    font-size: 30px;
-    font-weight: 800;
-    margin-bottom: 6px;
-    color: var(--accent);
-    letter-spacing: -0.02em;
-    font-family: "Noto Serif SC", Georgia, serif;
-  }
-
-  #welcome-screen p {
-    color: var(--text-secondary);
-    font-size: 15px;
-    margin-bottom: 28px;
-  }
-
-  /* ========== Tab bar ========== */
-  .tab-bar {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 32px;
-    padding: 4px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    max-width: 280px;
-    width: 100%;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .tab-btn {
-    flex: 1;
-    padding: 10px 20px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 14px;
-    font-family: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition);
-    border-radius: 10px;
-  }
-
-  .tab-btn:hover { color: var(--text); background: var(--chapter-hover); }
-
-  .tab-btn.active {
-    background: var(--accent);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(154, 116, 32, 0.25);
-  }
-
-  [data-theme="dark"] .tab-btn.active {
-    box-shadow: 0 2px 8px rgba(219, 179, 78, 0.2);
-  }
-
-  .tab-panel { display: none; width: 100%; max-width: 960px; }
+  .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
-  /* ========== Book search ========== */
-  .book-search {
-    position: relative;
-    width: 100%;
-    margin-bottom: 20px;
-  }
+  /* ---------- Hero search (SFACG banner pill) ---------- */
+  .book-search { position: relative; margin-bottom: 8px; }
 
   .book-search-input {
     width: 100%;
-    padding: 14px 44px 14px 44px;
+    height: 52px;
+    padding: 0 96px 0 22px;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 26px;
     background: var(--bg-card);
     color: var(--text);
     font-size: 15px;
     font-family: inherit;
     outline: none;
-    transition: all var(--transition);
     box-shadow: var(--shadow-sm);
+    transition: all var(--transition);
   }
 
-  .book-search-input::placeholder { color: var(--text-secondary); opacity: 0.6; }
+  .book-search-input::placeholder { color: var(--text-secondary); opacity: 0.65; }
   .book-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
   .book-search-icon {
     position: absolute;
-    left: 16px; top: 50%;
+    right: 6px; top: 50%;
     transform: translateY(-50%);
-    color: var(--text-secondary);
-    font-size: 16px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
     pointer-events: none;
   }
 
   .book-search-clear {
     position: absolute;
-    right: 12px; top: 50%;
+    right: 54px; top: 50%;
     transform: translateY(-50%);
-    width: 24px; height: 24px;
+    width: 22px; height: 22px;
     border: none;
     border-radius: 50%;
     background: var(--border);
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     display: none;
     align-items: center;
     justify-content: center;
@@ -244,92 +382,133 @@
   .book-search-clear:hover { background: var(--accent); color: #fff; }
   .book-search-clear.visible { display: flex; }
 
-  .book-search-no-results {
-    display: none;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 14px;
-    padding: 48px 20px;
-    grid-column: 1 / -1;
+  /* ---------- Section title (SFACG .common-title) ---------- */
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    margin: 30px 0 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
   }
-  .book-search-no-results.visible { display: block; }
 
-  /* ========== Category filter ========== */
+  .sec-head.first { margin-top: 6px; }
+  .sec-head .icn { font-size: 20px; line-height: 1; align-self: center; }
+
+  .sec-head .main-title {
+    font-size: 23px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: "Noto Serif SC", Georgia, serif;
+  }
+
+  .sec-head .sub-title { font-size: 14px; color: var(--text-secondary); }
+  .sec-head .tail { margin-left: auto; font-size: 13px; color: var(--text-secondary); }
+  .sec-head .tail b { color: var(--accent); font-weight: 700; }
+
+  /* ---------- Filter row (SFACG 作品类别) ---------- */
   .category-filter {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 28px;
-    width: 100%;
+    align-items: center;
+    gap: 6px;
+    margin: 16px 0 4px;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .category-filter .filter-label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--accent);
+    padding: 0 8px 0 4px;
+    flex-shrink: 0;
   }
 
   .category-chip {
-    padding: 9px 18px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 13.5px;
     font-family: inherit;
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition);
     white-space: nowrap;
+    transition: all var(--transition);
   }
 
-  .category-chip:hover { color: var(--text); border-color: var(--accent-light); }
+  .category-chip:hover { color: var(--accent); background: var(--accent-glow); }
+  .category-chip.active { background: var(--accent); color: #fff; }
 
-  .category-chip.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-    box-shadow: 0 2px 8px var(--accent-glow);
-  }
-
-  /* ========== Book grid ========== */
+  /* ---------- Book grid (SFACG .story-list) ---------- */
   .book-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 26px;
-    width: 100%;
+    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    gap: 28px 22px;
+    margin-top: 20px;
+    align-items: start;
   }
+
+  .book-grid .sec-head { grid-column: 1 / -1; }
 
   .book-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
     cursor: pointer;
-    transition: all var(--transition);
-    overflow: hidden;
-    text-align: left;
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    flex-direction: column;
+    text-align: center;
+    background: none;
+    border: none;
   }
-
-  .book-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--accent-light);
-  }
-
-  .book-card:active { transform: translateY(-1px); }
 
   .book-cover {
     position: relative;
     width: 100%;
-    aspect-ratio: 2 / 3;
-    background: linear-gradient(160deg, var(--accent-glow), var(--bg-sidebar));
+    aspect-ratio: 4 / 5;
+    border-radius: 6px;
+    overflow: hidden;
+    background: linear-gradient(150deg, var(--cover-a, #d8b79a), var(--cover-b, #b98a63));
+    box-shadow: 0 2px 8px rgba(30, 22, 16, 0.16);
+    transition: box-shadow var(--transition), transform var(--transition);
+  }
+
+  .book-card:hover .book-cover {
+    box-shadow: 0 10px 24px rgba(30, 22, 16, 0.28);
+    transform: translateY(-3px);
+  }
+
+  .book-card:active .book-cover { transform: translateY(0); }
+
+  /* Spine-style generated placeholder for books with no embedded cover */
+  .cover-fallback {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
-    flex-shrink: 0;
+    padding: 14px 10px;
   }
 
-  .book-cover-icon {
-    font-size: 40px;
-    opacity: 0.5;
+  .cover-fallback::before {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 3px;
+  }
+
+  .cover-fallback .cf-text {
+    font-family: "Noto Serif SC", Georgia, serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.96);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    writing-mode: vertical-rl;
+    max-height: 100%;
+    overflow: hidden;
+    letter-spacing: 0.06em;
   }
 
   .book-cover-img {
@@ -339,155 +518,227 @@
     height: 100%;
     object-fit: cover;
     display: none;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .book-card.has-cover .book-cover-icon { display: none; }
+  .book-card.has-cover .cover-fallback { display: none; }
   .book-card.has-cover .book-cover-img { display: block; }
-  .book-card:hover .book-cover-img { transform: scale(1.05); }
 
   .book-ext-badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 7px; right: 7px;
+    z-index: 2;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    padding: 3px 7px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
     background: rgba(20, 18, 16, 0.55);
     color: #fff;
   }
 
-  .book-card-body {
-    padding: 16px 18px 20px;
+  /* Hover info layer (SFACG .info-layer) */
+  .info-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 12px;
+    line-height: 22px;
+    text-align: left;
+    padding: 12px 12px 10px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    flex: 1;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
   }
+
+  .book-card:hover .info-layer { opacity: 1; }
+  .info-layer p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .info-layer .highlight { color: #ff0; }
+
+  .info-layer .read-btn {
+    margin-top: 9px;
+    align-self: center;
+    padding: 5px 16px;
+    border-radius: 15px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+  }
+
+  .book-prog-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 4;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.28);
+  }
+
+  .book-prog-bar i { display: block; height: 100%; background: var(--accent); }
 
   .book-card .book-title {
-    font-size: 15.5px;
-    font-weight: 700;
-    line-height: 1.5;
+    margin-top: 9px;
+    font-size: 14px;
+    line-height: 21px;
+    font-weight: 400;
+    color: var(--text);
     word-break: break-word;
-    font-family: "Noto Serif SC", Georgia, serif;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    transition: color var(--transition);
   }
 
-  /* ========== Links list ========== */
+  .book-card:hover .book-title { color: var(--accent); }
+
+  .book-progress {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .book-search-no-results {
+    display: none;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 56px 20px;
+    grid-column: 1 / -1;
+  }
+
+  .book-search-no-results.visible { display: block; }
+
+  /* ---------- Links ---------- */
   .links-list {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    width: 100%;
+    grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+    align-items: start;
   }
+
+  .links-list .sec-head { grid-column: 1 / -1; }
 
   .link-card {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 13px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 20px;
+    border-radius: 10px;
+    padding: 13px 15px;
     text-decoration: none;
     color: var(--text);
-    transition: all var(--transition);
-    text-align: left;
     box-shadow: var(--shadow-sm);
+    transition: all var(--transition);
   }
 
   .link-card:hover {
     transform: translateY(-2px);
+    border-color: var(--accent);
     box-shadow: var(--shadow-md);
-    border-color: var(--accent-light);
   }
 
   .link-card:active { transform: translateY(0); }
 
-  .link-icon {
-    font-size: 20px;
-    flex-shrink: 0;
+  .link-favicon {
+    position: relative;
     width: 42px; height: 42px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--accent-glow);
-    border-radius: var(--radius-sm);
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    background: linear-gradient(150deg, var(--cover-a, #d8b79a), var(--cover-b, #b98a63));
   }
+
+  .link-favicon img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;
+    padding: 7px;
+    background: #fff;
+    display: none;
+  }
+
+  .link-favicon img.loaded { display: block; }
 
   .link-info { flex: 1; min-width: 0; }
 
-  .link-url {
-    font-size: 14px;
+  .link-name {
+    font-size: 14.5px;
     font-weight: 700;
-    color: var(--accent);
+    line-height: 1.4;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    display: block;
+    transition: color var(--transition);
   }
 
-  .link-desc {
-    font-size: 13px;
+  .link-host {
+    font-size: 12px;
     color: var(--text-secondary);
-    margin-top: 4px;
-    line-height: 1.4;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .link-arrow {
     color: var(--border);
-    font-size: 18px;
+    font-size: 17px;
     flex-shrink: 0;
     transition: all var(--transition);
   }
 
+  .link-card:hover .link-name { color: var(--accent); }
   .link-card:hover .link-arrow { color: var(--accent); transform: translateX(2px); }
 
-  .links-empty {
+  .links-empty,
+  .grid-empty {
+    grid-column: 1 / -1;
     text-align: center;
     color: var(--text-secondary);
     font-size: 14px;
-    padding: 48px 20px;
-    line-height: 1.8;
+    padding: 56px 20px;
+    line-height: 1.9;
   }
 
-  .links-empty code {
-    background: var(--bg-sidebar);
+  .links-empty code,
+  .grid-empty code {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 13px;
   }
 
-  /* ========== Local file picker ========== */
-  .local-upload {
-    margin-top: 32px;
-    padding-top: 28px;
-    border-top: 1px solid var(--border);
-    width: 100%;
-    text-align: center;
-  }
-
-  .local-upload-label {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 14px;
-    display: block;
-  }
+  /* ---------- Local file picker ---------- */
+  .local-upload { margin-top: 8px; }
 
   .drop-zone {
     border: 2px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 36px 20px;
+    border-radius: 10px;
+    padding: 30px 20px;
+    margin-top: 18px;
+    text-align: center;
     cursor: pointer;
     transition: all var(--transition);
     color: var(--text-secondary);
     font-size: 14px;
+    background: var(--bg-card);
   }
 
   .drop-zone:hover, .drop-zone.drag-over {
@@ -498,6 +749,44 @@
 
   .drop-zone input[type="file"] { display: none; }
 
+  /* ---------- Main page responsive ---------- */
+  @media (hover: none) {
+    .info-layer { display: none; }
+  }
+
+  @media (max-width: 860px) {
+    .site-header { height: auto; flex-wrap: wrap; padding: 10px 14px 0; }
+    .site-logo { margin-right: auto; }
+    .site-logo .mark { width: 40px; height: 40px; border-radius: 12px; font-size: 20px; }
+    .site-logo .word b { font-size: 17px; }
+    .header-spacer { display: none; }
+    .site-nav { order: 3; width: 100%; margin-top: 8px; }
+    .nav-a { flex: 1; flex-direction: row; gap: 7px; padding: 12px 0; }
+    .nav-a .icn { font-size: 16px; }
+    .nav-a .text { font-size: 14px; }
+    .site-subbar { height: 36px; padding: 0 14px; font-size: 12px; gap: 12px; }
+    .subbar-resume .rs-name { max-width: 120px; }
+    .site-wrap { padding: 18px 14px 56px; }
+    .book-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 20px 12px; }
+    .book-card .book-title { font-size: 13px; line-height: 19px; }
+    .cover-fallback .cf-text { font-size: 13px; }
+    .sec-head { margin: 24px 0 4px; }
+    .sec-head .main-title { font-size: 19px; }
+    .sec-head .sub-title { display: none; }
+    .book-search-input { height: 46px; font-size: 14px; padding: 0 84px 0 18px; }
+    .book-search-icon { width: 36px; height: 36px; font-size: 15px; }
+    .book-search-clear { right: 48px; }
+    .links-list { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 520px) {
+    .hdr-btn span { display: none; }
+    .hdr-btn { padding: 0 13px; }
+  }
+
+  @media (max-width: 400px) {
+    .book-grid { grid-template-columns: repeat(3, 1fr); }
+  }
   /* ========== Reader Layout (SFACG-style) ========== */
   #reader-screen { display: none; height: 100%; }
   #reader-screen.active { display: block; }
@@ -1106,23 +1395,8 @@
     .crumbs { padding: 14px 4px 10px; }
   }
 
-  /* Tablet landscape — 2-column links */
-  @media (min-width: 600px) and (max-width: 1024px) {
-    .links-list { grid-template-columns: 1fr 1fr; }
-  }
-
   /* ========== Responsive: Mobile ========== */
   @media (max-width: 600px) {
-    #welcome-screen { padding: 32px 20px 48px; }
-    #welcome-screen .logo { font-size: 44px; }
-    #welcome-screen h1 { font-size: 24px; }
-    .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
-    .book-cover-icon { font-size: 34px; }
-    .book-card-body { padding: 12px 12px 14px; }
-    .book-card .book-title { font-size: 14px; }
-    .book-search-input { padding: 12px 40px 12px 40px; font-size: 14px; }
-    .book-search-clear { right: 12px; }
-
     .reader-content { padding: 0 10px 40px; }
     .article { padding: 0 20px; border-radius: 0; }
     .article-title { font-size: 20px; padding-right: 38px; }
@@ -1143,19 +1417,9 @@
 
   /* ========== Responsive: Very small screens ========== */
   @media (max-width: 380px) {
-    .book-grid { grid-template-columns: 1fr; }
     .topbar-controls { gap: 4px; }
     .ctrl-btn { width: 32px; height: 32px; font-size: 13px; }
     .font-size-display { min-width: 24px; font-size: 12px; }
-  }
-
-  /* ========== Book card progress ========== */
-  .book-progress {
-    font-size: 11px;
-    color: var(--accent);
-    margin-top: 6px;
-    font-weight: 600;
-    opacity: 0.85;
   }
 
   /* ========== Mobile bottom toolbar ========== */
@@ -1608,9 +1872,10 @@
     /* Ensure scrollable areas get proper touch handling */
     .reader-content,
     .chapter-list,
-    #welcome-screen {
+    .site-body {
       touch-action: pan-y;
     }
+    .site-header, .site-subbar { touch-action: none; }
   }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
@@ -1624,38 +1889,79 @@
   <div style="color: var(--text-secondary); font-size: 15px;">Loading books...</div>
 </div>
 
-<!-- Welcome / Book Select -->
+<!-- Welcome / Book Select — SFACG-style site chrome -->
 <div id="welcome-screen" style="display:none;">
-  <div class="logo">&#128214;</div>
-  <h1>Book Reader</h1>
-  <p>Select a book to start reading</p>
 
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="books">Books</button>
-    <button class="tab-btn" data-tab="links">Links</button>
+  <header class="site-header">
+    <div class="site-logo">
+      <span class="mark">&#128216;</span>
+      <span class="word">
+        <b>&#20070;&#26550;</b>
+        <span>Book Reader</span>
+      </span>
+    </div>
+
+    <nav class="site-nav">
+      <button class="nav-a active" data-tab="books">
+        <span class="icn">&#128218;</span>
+        <span class="text">&#20070;&#24211;<i class="count" id="nav-book-count">0</i></span>
+      </button>
+      <button class="nav-a" data-tab="links">
+        <span class="icn">&#128279;</span>
+        <span class="text">&#38142;&#25509;<i class="count" id="nav-link-count">&middot;</i></span>
+      </button>
+    </nav>
+
+    <div class="header-spacer"></div>
+
+    <div class="header-tools">
+      <button class="hdr-btn" id="btn-import" title="Load .txt / .epub from this device">&#128193; <span>&#23548;&#20837;&#26412;&#22320;</span></button>
+      <button class="hdr-btn icon-only" id="btn-home-theme" title="Toggle dark theme">&#9790;</button>
+    </div>
+  </header>
+
+  <div class="site-subbar">
+    <span class="subbar-stat">&#20849; <b id="stat-total">0</b> &#37096;&#20316;&#21697;</span>
+    <span class="subbar-sep"></span>
+    <span class="subbar-stat" id="stat-cats">&#20998;&#31867; <b>0</b></span>
+    <span class="subbar-sep"></span>
+    <span class="subbar-stat" id="stat-reading">&#22312;&#35835; <b>0</b></span>
+    <button class="subbar-resume" id="btn-resume">&#9654; &#32487;&#32493;&#38405;&#35835;&#65306;<span class="rs-name" id="resume-name"></span></button>
   </div>
 
-  <div class="tab-panel active" id="tab-books">
-    <div class="book-search">
-      <span class="book-search-icon">&#128269;</span>
-      <input type="text" class="book-search-input" id="book-search" placeholder="Search books..." autocomplete="off">
-      <button class="book-search-clear" id="book-search-clear">&times;</button>
-    </div>
-    <div class="category-filter" id="category-filter"></div>
-    <div class="book-grid" id="book-grid"></div>
-    <div class="book-search-no-results" id="book-search-no-results">No books found</div>
-    <div class="local-upload">
-      <span class="local-upload-label">Or load .txt / .epub files from your device</span>
-      <div class="drop-zone" id="drop-zone">
-        Drop .txt or .epub files here or click to browse
-        <input type="file" id="file-input" accept=".txt,.epub" multiple>
+  <div class="site-body">
+    <div class="site-wrap">
+
+      <div class="tab-panel active" id="tab-books">
+        <div class="book-search">
+          <input type="text" class="book-search-input" id="book-search" placeholder="&#36755;&#20837;&#20316;&#21697;&#21517;&#22312;&#20070;&#26550;&#20013;&#25628;&#32034;..." autocomplete="off">
+          <button class="book-search-clear" id="book-search-clear">&times;</button>
+          <span class="book-search-icon">&#128269;</span>
+        </div>
+
+        <div class="category-filter" id="category-filter"></div>
+        <div class="book-grid" id="book-grid"></div>
+        <div class="book-search-no-results" id="book-search-no-results">&#27809;&#26377;&#25214;&#21040;&#21305;&#37197;&#30340;&#20316;&#21697;</div>
+
+        <div class="local-upload">
+          <div class="sec-head">
+            <span class="icn">&#128228;</span>
+            <span class="main-title">&#26412;&#22320;&#23548;&#20837;</span>
+            <span class="sub-title">(&#25991;&#20214;&#21482;&#22312;&#27492;&#35774;&#22791;&#19978;&#25171;&#24320;&#65292;&#19981;&#20250;&#19978;&#20256;)</span>
+          </div>
+          <div class="drop-zone" id="drop-zone">
+            &#25302;&#25918; .txt / .epub &#25991;&#20214;&#21040;&#36825;&#37324;&#65292;&#25110;&#28857;&#20987;&#36873;&#25321;&#25991;&#20214;
+            <input type="file" id="file-input" accept=".txt,.epub" multiple>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <div class="tab-panel" id="tab-links">
-    <div class="links-list" id="links-list">
-      <div class="links-empty">Loading links...</div>
+      <div class="tab-panel" id="tab-links">
+        <div class="links-list" id="links-list">
+          <div class="links-empty">&#27491;&#22312;&#21152;&#36733;&#38142;&#25509;...</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1959,18 +2265,24 @@
     for (var i = 0; i < dots.length; i++) {
       dots[i].classList.toggle('selected', dots[i].getAttribute('data-skin') === s);
     }
+    var glyph = darkMode ? '&#9788;' : '&#9790;';
     var $t = document.getElementById('btn-theme');
-    if ($t) $t.innerHTML = darkMode ? '&#9788;' : '&#9790;';
+    if ($t) $t.innerHTML = glyph;
+    var $h = document.getElementById('btn-home-theme');
+    if ($h) $h.innerHTML = glyph;
   }
 
   applySkin(skin);
 
-  document.getElementById('btn-theme').addEventListener('click', function () {
+  function toggleTheme() {
     applySkin(skin === 'dark' ? lastLightSkin : 'dark');
     localStorage.setItem('reader-skin', skin);
     localStorage.setItem('reader-skin-light', lastLightSkin);
     localStorage.setItem('reader-dark', darkMode ? '1' : '0');
-  });
+  }
+
+  document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+  document.getElementById('btn-home-theme').addEventListener('click', toggleTheme);
 
   // ============ Page width (SFACG 页面宽度) ============
   var readerWidth = localStorage.getItem('reader-width') || 'middle';
@@ -2932,27 +3244,71 @@
     handleLocalFiles(e.dataTransfer.files);
   });
 
+  // Deterministic cover tints, so a book keeps the same spine colour forever.
+  var COVER_PALETTE = [
+    ['#e2a463', '#bc6b30'], ['#8fb7a2', '#4d7d67'], ['#a79ccb', '#655a97'],
+    ['#e39ba7', '#b35a72'], ['#8fb1ce', '#4d7398'], ['#d0ae79', '#977037'],
+    ['#9ec5b1', '#5a8f77'], ['#d69a86', '#a35c46'], ['#adb78d', '#6e7d4b'],
+    ['#c9a3b9', '#8c5c7b'], ['#7fb0b8', '#3f7b85'], ['#dda07c', '#ab6039']
+  ];
+
+  function hashString(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h;
+  }
+
+  function coverColors(name) { return COVER_PALETTE[hashString(name) % COVER_PALETTE.length]; }
+
+  // Text painted on the generated spine — drop bracketed tags, author suffixes
+  // and the ⊙ volume markers these filenames carry.
+  function coverText(name) {
+    var t = name
+      .replace(/[（(【\[][^）)】\]]*[）)】\]]/g, '')
+      .replace(/⊙[\s\S]*$/, '')
+      .split(/[_—]|作者\s*[:：]/)[0]
+      .replace(/\s+/g, '')
+      .trim();
+    if (!t) t = name.trim();
+    return t.length > 14 ? t.slice(0, 14) : t;
+  }
+
   function makeBookCard(book) {
     var card = document.createElement('div');
     card.className = 'book-card';
     var name = book.name.replace(/\.(txt|epub)$/i, '');
     var isEpub = /\.epub$/i.test(book.name);
+    var pal = coverColors(name);
+    card.style.setProperty('--cover-a', pal[0]);
+    card.style.setProperty('--cover-b', pal[1]);
+
     var progress = getBookProgress(book.name);
-    var progressHtml = '';
-    if (progress && progress.chapter !== undefined && progress.total) {
-      var pct = Math.round((progress.chapter + 1) / progress.total * 100);
-      progressHtml = '<div class="book-progress">Ch ' + (progress.chapter + 1) + '/' + progress.total + ' (' + pct + '%)</div>';
+    var pct = null;
+    var chapLine = '尚未阅读';
+    if (progress && progress.chapter !== undefined) {
+      if (progress.total) {
+        pct = Math.min(100, Math.round((progress.chapter + 1) / progress.total * 100));
+        chapLine = '第 ' + (progress.chapter + 1) + ' / ' + progress.total + ' 章';
+      } else {
+        chapLine = '第 ' + (progress.chapter + 1) + ' 章';
+      }
     }
+
     card.innerHTML =
       '<div class="book-cover">' +
-        '<span class="book-cover-icon">&#128218;</span>' +
+        '<div class="cover-fallback"><span class="cf-text">' + escapeHtml(coverText(name)) + '</span></div>' +
         '<img class="book-cover-img" alt="">' +
         '<span class="book-ext-badge">' + (isEpub ? 'EPUB' : 'TXT') + '</span>' +
+        '<div class="info-layer">' +
+          '<p>格式：<span class="highlight">' + (isEpub ? 'EPUB' : 'TXT') + '</span></p>' +
+          '<p>进度：<span class="highlight">' + escapeHtml(chapLine) + '</span></p>' +
+          '<p>已读：<span class="highlight">' + (pct === null ? '0%' : pct + '%') + '</span></p>' +
+          '<span class="read-btn">' + (progress ? '继续阅读' : '开始阅读') + '</span>' +
+        '</div>' +
+        (pct === null ? '' : '<div class="book-prog-bar"><i style="width:' + pct + '%"></i></div>') +
       '</div>' +
-      '<div class="book-card-body">' +
-        '<div class="book-title">' + escapeHtml(name) + '</div>' +
-        progressHtml +
-      '</div>';
+      '<div class="book-title">' + escapeHtml(name) + '</div>' +
+      (progress ? '<div class="book-progress">' + escapeHtml(chapLine) + '</div>' : '');
     card.addEventListener('click', function () {
       if (book._file && !book._localText && !book._localBuffer) {
         var isEp = /\.epub$/i.test(book._file.name);
@@ -2994,10 +3350,15 @@
     $categoryFilter.style.display = '';
 
     var chips = [{ key: 'all', label: '全部' }];
-    if (hasUncategorized) chips.push({ key: 'uncategorized', label: '未分類' });
+    if (hasUncategorized) chips.push({ key: 'uncategorized', label: '未分类' });
     catNames.forEach(function (c) { chips.push({ key: c, label: c }); });
 
     $categoryFilter.innerHTML = '';
+    var label = document.createElement('span');
+    label.className = 'filter-label';
+    label.textContent = '作品分类：';
+    $categoryFilter.appendChild(label);
+
     chips.forEach(function (c) {
       var btn = document.createElement('button');
       btn.className = 'category-chip' + (selectedCategory === c.key ? ' active' : '');
@@ -3018,6 +3379,7 @@
 
   function renderBookGrid() {
     renderCategoryFilter();
+    updateHeaderStats();
     $bookGrid.innerHTML = '';
 
     // Category scoping (same rules as before, just factored out so search can reuse it).
@@ -3031,14 +3393,20 @@
     });
     var catKeys = Object.keys(byCategory).sort();
 
-    function appendSection(list, headerText) {
+    // SFACG .common-title: icon + title + optional note, count pinned right.
+    var firstHeader = true;
+    function appendSection(list, headerText, icon, note) {
       if (list.length === 0) return;
       if (headerText) {
         var header = document.createElement('div');
-        header.className = 'category-header';
-        header.textContent = headerText;
-        header.style.cssText = 'grid-column:1/-1;font-size:18px;font-weight:700;color:var(--accent);margin:24px 0 4px;padding:8px 4px;border-bottom:2px solid var(--border);font-family:"Noto Serif SC",Georgia,serif;';
+        header.className = 'sec-head' + (firstHeader ? ' first' : '');
+        header.innerHTML =
+          '<span class="icn">' + (icon || '&#128218;') + '</span>' +
+          '<span class="main-title">' + escapeHtml(headerText) + '</span>' +
+          (note ? '<span class="sub-title">' + escapeHtml(note) + '</span>' : '') +
+          '<span class="tail"><b>' + list.length + '</b> 部</span>';
         $bookGrid.appendChild(header);
+        firstHeader = false;
       }
       list.forEach(function (book) { $bookGrid.appendChild(makeBookCard(book)); });
     }
@@ -3046,28 +3414,67 @@
     var query = bookSearchQuery.trim().toLowerCase();
 
     if (query) {
-      // Searching flattens across categories (within whatever category is selected) — no headers, just results.
+      // Searching flattens across categories (within whatever category is selected) — one results header.
       var scoped;
       if (selectedCategory === 'all') scoped = books;
       else if (selectedCategory === 'uncategorized') scoped = uncategorized;
       else scoped = byCategory[selectedCategory] || [];
 
       var matches = scoped.filter(function (b) { return bookMatchesSearch(b, query); });
-      appendSection(matches, null);
+      appendSection(matches, '搜索结果', '&#128269;', '“' + bookSearchQuery.trim() + '”');
       $bookSearchNoResults.classList.toggle('visible', matches.length === 0);
       return;
     }
 
     $bookSearchNoResults.classList.remove('visible');
 
+    if (books.length === 0) {
+      $bookGrid.innerHTML =
+        '<div class="grid-empty">书架还是空的。<br>把 .txt / .epub 放进仓库的 <code>books/</code> 目录，或用下面的本地导入。</div>';
+      return;
+    }
+
     if (selectedCategory === 'all') {
       // Only label the uncategorized group when there's at least one real category to distinguish it from.
-      appendSection(uncategorized, (uncategorized.length > 0 && catKeys.length > 0) ? '未分類' : null);
-      catKeys.forEach(function (cat) { appendSection(byCategory[cat], cat); });
+      appendSection(uncategorized, catKeys.length > 0 ? '未分类' : '全部作品', '&#128218;');
+      catKeys.forEach(function (cat) { appendSection(byCategory[cat], cat, '&#128193;'); });
     } else if (selectedCategory === 'uncategorized') {
-      appendSection(uncategorized, null);
+      appendSection(uncategorized, '未分类', '&#128218;');
     } else {
-      appendSection(byCategory[selectedCategory] || [], null);
+      appendSection(byCategory[selectedCategory] || [], selectedCategory, '&#128193;');
+    }
+  }
+
+  // ============ Header stats / resume shortcut ============
+  var $navBookCount = document.getElementById('nav-book-count');
+  var $navLinkCount = document.getElementById('nav-link-count');
+  var $statTotal    = document.getElementById('stat-total');
+  var $statCats     = document.getElementById('stat-cats');
+  var $statReading  = document.getElementById('stat-reading');
+  var $btnResume    = document.getElementById('btn-resume');
+  var $resumeName   = document.getElementById('resume-name');
+
+  function updateHeaderStats() {
+    var cats = {};
+    var reading = 0;
+    books.forEach(function (b) {
+      if (b._category) cats[b._category] = true;
+      if (getBookProgress(b.name)) reading++;
+    });
+    $navBookCount.textContent = books.length;
+    $statTotal.textContent = books.length;
+    $statCats.innerHTML = '分类 <b>' + Object.keys(cats).length + '</b>';
+    $statReading.innerHTML = '在读 <b>' + reading + '</b>';
+
+    var last = getLastRead();
+    var match = last && last.book && books.find(function (b) { return b.name === last.book; });
+    if (match) {
+      $resumeName.textContent = last.book.replace(/\.(txt|epub)$/i, '');
+      $btnResume.classList.add('visible');
+      $btnResume.onclick = function () { openBook(match, last.chapter, last.scroll); };
+    } else {
+      $btnResume.classList.remove('visible');
+      $btnResume.onclick = null;
     }
   }
 
@@ -3249,8 +3656,8 @@
     }
   }
 
-  // ============ Tab switching ============
-  var tabBtns = document.querySelectorAll('.tab-btn');
+  // ============ Tab switching (SFACG top nav) ============
+  var tabBtns = document.querySelectorAll('.nav-a');
   var tabPanels = { books: document.getElementById('tab-books'), links: document.getElementById('tab-links') };
   var linksLoaded = false;
 
@@ -3262,6 +3669,8 @@
       Object.keys(tabPanels).forEach(function (k) {
         tabPanels[k].classList.toggle('active', k === target);
       });
+      var body = document.querySelector('.site-body');
+      if (body) body.scrollTop = 0;
       // Lazy-load links on first visit
       if (target === 'links' && !linksLoaded) {
         linksLoaded = true;
@@ -3269,6 +3678,8 @@
       }
     });
   });
+
+  document.getElementById('btn-import').addEventListener('click', function () { $fileInput.click(); });
 
   // ============ Links tab ============
   var $linksList = document.getElementById('links-list');
@@ -3298,15 +3709,26 @@
 
     if (text === null || text.trim() === '') {
       $linksList.innerHTML =
-        '<div class="links-empty">No links yet.<br>Create a <code>urls.txt</code> file in the repo root with one link per line:<br><br><code>https://example.com,Example Site</code></div>';
+        '<div class="links-empty">还没有链接。<br>在仓库根目录建立 <code>urls.txt</code>，每行一条：' +
+        '<br><br><code>https://example.com,示例站点</code>' +
+        '<br>以 <code># 分组名</code> 开头的行会成为分组标题。</div>';
+      $navLinkCount.textContent = '0';
       return;
     }
 
     text = normalizeText(text);
-    var lines = text.split('\n').filter(function (l) { return l.trim().length > 0; });
-    var frag = document.createDocumentFragment();
+    var lines = text.split('\n');
 
-    lines.forEach(function (line) {
+    // Lines are grouped by "# heading" markers; everything before the first
+    // marker lands in a default group.
+    var groups = [{ name: '', items: [] }];
+    lines.forEach(function (raw) {
+      var line = raw.trim();
+      if (!line) return;
+      if (line.charAt(0) === '#') {
+        groups.push({ name: line.replace(/^#+\s*/, ''), items: [] });
+        return;
+      }
       // Format: url,description  (first comma splits url from description)
       var commaIdx = line.indexOf(',');
       var url, desc;
@@ -3314,34 +3736,73 @@
         url = line.slice(0, commaIdx).trim();
         desc = line.slice(commaIdx + 1).trim();
       } else {
-        url = line.trim();
+        url = line;
         desc = '';
       }
       if (!url) return;
+      groups[groups.length - 1].items.push({ url: url, desc: desc });
+    });
 
-      var a = document.createElement('a');
-      a.className = 'link-card';
-      a.href = url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
+    var total = groups.reduce(function (n, g) { return n + g.items.length; }, 0);
+    $navLinkCount.textContent = total;
 
-      // Extract domain for display
-      var domain = url;
-      try { domain = new URL(url).hostname; } catch (e) {}
+    if (total === 0) {
+      $linksList.innerHTML = '<div class="links-empty">urls.txt 里还没有可用的链接。</div>';
+      return;
+    }
 
-      a.innerHTML =
-        '<span class="link-icon">&#128279;</span>' +
-        '<div class="link-info">' +
-          '<span class="link-url">' + escapeHtml(domain) + '</span>' +
-          (desc ? '<div class="link-desc">' + escapeHtml(desc) + '</div>' : '') +
-        '</div>' +
-        '<span class="link-arrow">&#8594;</span>';
+    var frag = document.createDocumentFragment();
+    var named = groups.filter(function (g) { return g.name; }).length > 0;
+    var first = true;
 
-      frag.appendChild(a);
+    groups.forEach(function (group) {
+      if (group.items.length === 0) return;
+
+      var head = document.createElement('div');
+      head.className = 'sec-head' + (first ? ' first' : '');
+      head.innerHTML =
+        '<span class="icn">&#128279;</span>' +
+        '<span class="main-title">' + escapeHtml(group.name || (named ? '其他' : '收藏链接')) + '</span>' +
+        '<span class="tail"><b>' + group.items.length + '</b> 条</span>';
+      frag.appendChild(head);
+      first = false;
+
+      group.items.forEach(function (item) { frag.appendChild(makeLinkCard(item)); });
     });
 
     $linksList.innerHTML = '';
     $linksList.appendChild(frag);
+  }
+
+  function makeLinkCard(item) {
+    var a = document.createElement('a');
+    a.className = 'link-card';
+    a.href = item.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+
+    var host = item.url;
+    try { host = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(item.url) ? item.url : 'https://' + item.url).hostname; } catch (e) {}
+    var label = item.desc || host.replace(/^www\./, '');
+    var pal = coverColors(host);
+    a.style.setProperty('--cover-a', pal[0]);
+    a.style.setProperty('--cover-b', pal[1]);
+
+    a.innerHTML =
+      '<span class="link-favicon">' + escapeHtml(label.charAt(0)) + '<img alt=""></span>' +
+      '<div class="link-info">' +
+        '<div class="link-name">' + escapeHtml(label) + '</div>' +
+        '<div class="link-host">' + escapeHtml(host) + '</div>' +
+      '</div>' +
+      '<span class="link-arrow">&#8594;</span>';
+
+    // Favicon layers over the generated letter tile; if it never loads the
+    // letter simply stays visible.
+    var img = a.querySelector('.link-favicon img');
+    img.addEventListener('load', function () { if (img.naturalWidth > 1) img.classList.add('loaded'); });
+    img.src = 'https://icons.duckduckgo.com/ip3/' + encodeURIComponent(host) + '.ico';
+
+    return a;
   }
 
   // ============ Reading settings (typeface, line height) ============
@@ -3826,15 +4287,25 @@
   }
 
   // ============ Reading progress on book cards ============
+  // The per-book record is authoritative: its `total` is a chapter count.
+  // `reader-position` stores a scroll height in `total`, so it can only ever
+  // contribute the chapter index — never a percentage.
   function getBookProgress(bookName) {
     try {
-      var data = JSON.parse(localStorage.getItem('reader-position'));
-      if (data && data.book === bookName) return data;
+      var perBook = JSON.parse(localStorage.getItem('reader-progress-' + bookName));
+      if (perBook && perBook.chapter !== undefined) return perBook;
     } catch (e) {}
-    // Also check per-book saved progress
     try {
-      return JSON.parse(localStorage.getItem('reader-progress-' + bookName));
-    } catch (e) { return null; }
+      var data = JSON.parse(localStorage.getItem('reader-position'));
+      if (data && data.book === bookName) return { book: bookName, chapter: data.chapter };
+    } catch (e) {}
+    return null;
+  }
+
+  // Most recently opened book, kept across "back to library" (which wipes
+  // reader-position) so the header can offer a resume shortcut.
+  function getLastRead() {
+    try { return JSON.parse(localStorage.getItem('reader-last')); } catch (e) { return null; }
   }
 
   // Save per-book progress (separate from current position)
@@ -3846,6 +4317,11 @@
         book: currentBook.name,
         chapter: currentChapterIndex,
         total: chapters.length
+      }));
+      localStorage.setItem('reader-last', JSON.stringify({
+        book: currentBook.name,
+        chapter: currentChapterIndex,
+        scroll: $readerContent.scrollTop
       }));
     }
   };
