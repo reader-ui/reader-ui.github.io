@@ -950,6 +950,28 @@
 
   .chapter-item.hidden { display: none; }
 
+  /* Volume band in the catalog — books that ship 第N卷 markers restart their
+     chapter numbering inside each one, so the drawer groups them. */
+  .vol-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 9px 20px 8px 22px;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    background: var(--bg-sidebar);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vol-head:first-child { margin-top: 0; border-top: none; }
+
   .chapter-no-results {
     padding: 28px;
     text-align: center;
@@ -1180,6 +1202,21 @@
     text-indent: 2em;
     margin: 0 0 0.4em;
     text-align: justify;
+  }
+
+  /* Inline illustrations — some chapters embed an <img> pointing at the
+     publisher's CDN instead of a paragraph. */
+  .ch-illust {
+    margin: 22px 0;
+    text-indent: 0;
+    text-align: center;
+  }
+
+  .ch-illust img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: var(--shadow-lg);
   }
 
   .article-content .load-state {
@@ -2352,10 +2389,20 @@
     var qLower = query.toLowerCase();
     var frag = document.createDocumentFragment();
     var visibleCount = 0;
+    var lastVol = null;
 
     for (var i = 0; i < chapters.length; i++) {
       var title = chapters[i].title;
       if (query && !title.toLowerCase().includes(qLower)) continue;
+
+      // Volume bands only make sense on the unfiltered list
+      if (!query && chapters[i].volume && chapters[i].volume !== lastVol) {
+        lastVol = chapters[i].volume;
+        var vh = document.createElement('div');
+        vh.className = 'vol-head';
+        vh.textContent = lastVol;
+        frag.appendChild(vh);
+      }
 
       var el = document.createElement('div');
       el.className = 'chapter-item' +
@@ -2546,6 +2593,130 @@
     return text.replace(/\uFEFF/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   }
 
+  // ============ 【月漪】 watermark scrubbing ============
+  // Scans from this group carry two kinds of noise: a QQ-group advert block
+  // repeated every few chapters, and short runs of garbage characters spliced
+  // into sentences (and into chapter headings) to defeat copy detection.
+  // The junk comes from a fixed pool, so runs can be located reliably: each one
+  // holds at least one character that never shows up in ordinary prose.
+  var WM_SIGNATURE = /【月漪】|月漪免费外群|本群免费提取全网平台/;
+  var WM_PROMO = /^(?:本书由【月漪】整理|【月漪】提醒您|【月漪[^】]*群[^】]*】|本群免费提取全网平台)/;
+  // Impossible in prose: CJK symbol block, enclosed numerals, full-width latin.
+  var WM_STRONG_SRC = '\\u3005-\\u3007\\u3012-\\u3020\\u3021-\\u302F\\u3030-\\u303F' +
+                      '\\u2460-\\u24FF\\uFF10-\\uFF19\\uFF21-\\uFF3A\\uFF41-\\uFF5A';
+  var WM_STRONG = new RegExp('[' + WM_STRONG_SRC + ']');
+  // Rare characters the generator favours — two together are enough to mark a run.
+  var WM_HARD = '′〃〄〈〉ー亻侕俬倭傘儛児厁叁叄咝囷宭岄岜峮帬弍彡捌栎栮氿泗洱焐熘爾玐玥磷箘紦罒羣翏衤裠覇貳贰踆轳邬鏾锍镏镹陕陸陾韭飼鷗鸸鹨麇';
+  // Characters it also uses that are common in real prose: a run can swallow
+  // these, but they never start one.
+  var WM_SOFT = '⊙『』七九亦亿企六删吆吴咎坝妻寺尹崎怡扒掺揪旗柒棋榴氵泣洽淋澪玖玲珊琉琦疚疤瘤硫祁肆芭虾衫诌蹴迩逝逡遛邻陵霓霖鳍鸠';
+  // The group's own name, spelled with homophones and separators (月漪 → 越+仪 …)
+  var WM_AD = /[月越阅悦曰岄玥粤]\s*[^一-鿿\s]{1,3}\s*[漪仪怡易依衣翼艺亿宜椅]|月漪|玥漪|越漪|阅漪|悦怡|月椅|月仪|越仪|岄亿|曰易|首[^一-鿿]{1,3}发|群[^一-鿿]{1,3}聊/g;
+  // Filler a run may contain or grow over: latin, digits, ascii punctuation, brackets.
+  var WM_FILL = /[0-9A-Za-z\u0020-\u002F\u003A-\u0040\u005B-\u0060\u007B-\u007E\u00A0\u3000\u00B7\uFF08\uFF09\u300C\u300D]/;
+  var WM_STOP = '\n，。！？；：、“”…—';
+  // Chapter markers that must survive intact when junk is spliced behind them.
+  var WM_HEAD = /^[\s　]*(?:第[0-9零一二三四五六七八九十百千]+[章节卷回]|Chap(?:ter)?\.?\s*[0-9]+|[0-9]+\s*[.、~．])/;
+  var WM_GAP = 12, WM_REACH = 10;
+  // Cheap per-line pre-filter so the character scan only runs on the ~2% of
+  // lines that could possibly hold junk.
+  var WM_SUSPECT = new RegExp('[' + WM_STRONG_SRC + WM_HARD + '月越阅悦曰岄玥粤首群]');
+
+  var WM_HARD_SET = {}, WM_SOFT_SET = {};
+  for (var wmi = 0; wmi < WM_HARD.length; wmi++) WM_HARD_SET[WM_HARD.charAt(wmi)] = 1;
+  for (wmi = 0; wmi < WM_SOFT.length; wmi++) WM_SOFT_SET[WM_SOFT.charAt(wmi)] = 1;
+
+  function wmExpandable(c) {
+    return WM_HARD_SET[c] === 1 || WM_STRONG.test(c) || WM_FILL.test(c);
+  }
+
+  function wmCleanLine(line) {
+    if (!WM_SUSPECT.test(line)) return line;
+
+    // Junk is often spliced straight after a chapter marker ("Chap.37<junk> …").
+    // A run growing outward would swallow the marker along with it, so pin the
+    // marker down and only scrub what follows.
+    var guardM = line.match(WM_HEAD), guard = guardM ? guardM[0].length : 0;
+
+    var n = line.length, i, c;
+    var seeds = [], ads = [], m;
+    var isSeed = {};
+    for (i = guard; i < n; i++) {
+      c = line.charAt(i);
+      if (WM_HARD_SET[c] === 1 || WM_STRONG.test(c)) isSeed[i] = 1;
+    }
+    WM_AD.lastIndex = guard;
+    while ((m = WM_AD.exec(line)) !== null) {
+      ads.push([m.index, m.index + m[0].length]);
+      for (i = m.index; i < m.index + m[0].length; i++) isSeed[i] = 1;
+    }
+    for (i = guard; i < n; i++) if (isSeed[i]) seeds.push(i);
+    if (seeds.length === 0) return line;
+
+    // Group seeds into runs, bridging over a short stretch of ordinary text
+    // (junk is spliced mid-word, so a run may straddle real characters).
+    var clusters = [], a = seeds[0], b = seeds[0], p, g, nStop;
+    for (i = 1; i < seeds.length; i++) {
+      p = seeds[i];
+      nStop = 0;
+      for (g = b + 1; g < p; g++) if (WM_STOP.indexOf(line.charAt(g)) >= 0) nStop++;
+      if (p - b <= WM_GAP && (nStop === 0 || (nStop === 1 && p - b <= 5))) b = p;
+      else { clusters.push([a, b]); a = b = p; }
+    }
+    clusters.push([a, b]);
+
+    var out = line.slice(0, guard), last = guard, k;
+    for (k = 0; k < clusters.length; k++) {
+      var s = clusters[k][0], e = clusters[k][1];
+      var nStrong = 0, nHard = 0;
+      for (i = s; i <= e; i++) {
+        c = line.charAt(i);
+        if (WM_STRONG.test(c)) nStrong++;
+        else if (WM_HARD_SET[c] === 1) nHard++;
+      }
+      var isAd = false;
+      for (i = 0; i < ads.length; i++) if (ads[i][0] >= s && ads[i][1] <= e + 1) isAd = true;
+      // One impossible character, two rare ones, or the group name: junk.
+      // A single rare character on its own is left alone — it may be real.
+      if (!(nStrong || nHard >= 2 || isAd || (nHard && e > s))) continue;
+
+      var lo = s, hi = e, soft = 0;
+      while (lo > last && s - lo < WM_REACH && WM_STOP.indexOf(line.charAt(lo - 1)) < 0) {
+        c = line.charAt(lo - 1);
+        if (wmExpandable(c)) lo--;
+        else if (WM_SOFT_SET[c] === 1 && soft < 3) { soft++; lo--; }
+        else break;
+      }
+      soft = 0;
+      while (hi < n - 1 && hi - e < WM_REACH && WM_STOP.indexOf(line.charAt(hi + 1)) < 0) {
+        c = line.charAt(hi + 1);
+        if (wmExpandable(c)) hi++;
+        else if (WM_SOFT_SET[c] === 1 && soft < 3) { soft++; hi++; }
+        else break;
+      }
+      if (lo < last) lo = last;
+      out += line.slice(last, lo);
+      last = hi + 1;
+    }
+    return out + line.slice(last);
+  }
+
+  function cleanWatermark(text) {
+    if (!WM_SIGNATURE.test(text)) return text;
+    var lines = text.split('\n'), out = [], l, k;
+    for (var i = 0; i < lines.length; i++) {
+      l = lines[i];
+      if (WM_PROMO.test(l)) continue;
+      // Junk parked ahead of a paragraph's 　　 indent — strip it outright.
+      if (l.slice(0, 2) !== '　　') {
+        k = l.indexOf('　　');
+        if (k > 0 && k < 60 && !/^\s*第[0-9零一二三四五六七八九十百]+[章节卷]/.test(l)) l = l.slice(k);
+      }
+      out.push(wmCleanLine(l));
+    }
+    return out.join('\n');
+  }
+
   // ============ Load book list ============
   async function loadBooks() {
     const info = getRepoInfo();
@@ -2713,7 +2884,7 @@
 
   // ============ Open a book ============
   async function openBook(book, resumeChapter, resumeScroll) {
-    var displayName = book.name.replace(/\.(txt|epub)$/i, '');
+    var displayName = displayBookName(book.name);
     $welcome.style.display = 'none';
     $reader.classList.add('active');
     $readerText.innerHTML = '<div class="load-state"><div class="spinner" style="margin:0 auto 16px;"></div>Loading book...</div>';
@@ -2771,7 +2942,7 @@
           if (!res.ok) throw new Error('HTTP ' + res.status);
           text = await res.text();
         }
-        text = normalizeText(text);
+        text = cleanWatermark(normalizeText(text));
         parseChapters(text);
       }
       renderChapterList();
@@ -2986,6 +3157,31 @@
       if (cutoffIdx < 0) cutoffIdx = text.length;
       splits = collectMatches(text, /^\s*(No、\d+[^\s\n][^\n]*|第[零一二三四五六七八九十百千万0-9]+章[：:][^\n]*)/gm);
       splits = splits.filter(function (s) { return s.index < cutoffIdx && s.title.length <= 100; });
+    } else if (currentBook && currentBook.name.indexOf('34岁，是魔法少女') >= 0) {
+      // Seven volumes (第N卷). Chapter numbering restarts inside each one, and
+      // the heading marker switches from 章 to 节 partway through every volume,
+      // so neither alone covers the book. The watermark scrubber runs first,
+      // which is what repairs headings it had spliced junk into.
+      var mgVols = [];
+      var mgVolRe = /^(第[0-9零一二三四五六七八九十百]+卷[^\n]*)/gm, mgVm;
+      while ((mgVm = mgVolRe.exec(text)) !== null) {
+        mgVols.push({ index: mgVm.index, title: mgVm[1].trim() });
+      }
+      var mgRe = /^(第?[0-9零一二三四五六七八九十百]+[章节][^\n]*)$|^(上架感言|完本感言|作者的话|后记)$/gm, mgM;
+      while ((mgM = mgRe.exec(text)) !== null) {
+        var mgT = (mgM[1] || mgM[2]).trim();
+        if (mgT.length > 100) continue;
+        // A stray heading lost its 第 to the watermark — put it back.
+        if (mgM[1] && mgT.charAt(0) !== '第') mgT = '第' + mgT;
+        splits.push({ index: mgM.index, title: mgT });
+      }
+      // Tag every chapter with the volume it sits in so the catalog can band them.
+      for (var mgi = 0, mgv = 0; mgi < splits.length; mgi++) {
+        while (mgv + 1 < mgVols.length && mgVols[mgv + 1].index < splits[mgi].index) mgv++;
+        if (mgVols.length && mgVols[mgv].index < splits[mgi].index) {
+          splits[mgi].volume = mgVols[mgv].title;
+        }
+      }
     } else if (currentBook && currentBook.name.indexOf('因为怕痛就把攻击全闪避了') >= 0) {
       // Book uses "N~Title" for real chapters, but in-story game/system text
       // also contains "第X章"-style phrases, which would make Strategy 1 match
@@ -3074,14 +3270,22 @@
       // Separate the title line from body
       var nlIdx = raw.indexOf('\n');
       var body = nlIdx >= 0 ? raw.slice(nlIdx + 1).trim() : '';
-      chapters.push({ title: splits[i].title, content: body });
+      chapters.push({ title: splits[i].title, content: body, volume: splits[i].volume });
     }
   }
 
   // ============ Render chapter list ============
   function renderChapterList() {
     var frag = document.createDocumentFragment();
+    var lastVol = null;
     for (var i = 0; i < chapters.length; i++) {
+      if (chapters[i].volume && chapters[i].volume !== lastVol) {
+        lastVol = chapters[i].volume;
+        var vh = document.createElement('div');
+        vh.className = 'vol-head';
+        vh.textContent = lastVol;
+        frag.appendChild(vh);
+      }
       var el = document.createElement('div');
       el.className = 'chapter-item' + (isChapterBookmarked(i) ? ' bookmarked' : '');
       el.setAttribute('data-idx', i);
@@ -3140,6 +3344,7 @@
     var charCount = body.replace(/\s+/g, '').length;
     var minutes = Math.max(1, Math.round(charCount / 450));
     $articleDesc.innerHTML =
+      (ch.volume ? '<span class="text">' + escapeHtml(ch.volume) + '</span>' : '') +
       '<span class="text">Chapter ' + (idx + 1) + ' of ' + chapters.length + '</span>' +
       '<span class="text">' + charCount.toLocaleString() + ' characters</span>' +
       '<span class="text">about ' + minutes + ' min read</span>';
@@ -3149,7 +3354,15 @@
     var paragraphs = body.split(/\n+/);
     paragraphs.forEach(function (p) {
       p = p.trim();
-      if (p) html += '<p>' + escapeHtml(p) + '</p>';
+      if (!p) return;
+      // Some chapters carry an illustration as a bare <img> pointing at the
+      // publisher's CDN. Render it instead of printing the tag as text.
+      var img = p.match(/^<img\s[^>]*\bsrc\s*=\s*["'](https:\/\/[^"'<>\s]+)["'][^>]*>$/i);
+      if (img) {
+        html += '<figure class="ch-illust"><img loading="lazy" alt="" src="' + escapeHtml(img[1]) + '"></figure>';
+        return;
+      }
+      html += '<p>' + escapeHtml(p) + '</p>';
     });
     $readerText.innerHTML = html;
 
@@ -3273,6 +3486,20 @@
     return t.length > 14 ? t.slice(0, 14) : t;
   }
 
+  // These filenames tack the source's completion marker onto the title with a
+  // ⊙ ("…⊙完本", "…⊙1-1-卷七第81章"). Keep it out of headings and card titles.
+  function displayBookName(name) {
+    var base = name.replace(/\.(txt|epub)$/i, '');
+    var i = base.indexOf('⊙');
+    return i > 0 ? base.slice(0, i).trim() : base;
+  }
+
+  function bookStatusTag(name) {
+    var base = name.replace(/\.(txt|epub)$/i, '');
+    var i = base.indexOf('⊙');
+    return i > 0 ? base.slice(i + 1).trim() : '';
+  }
+
   function makeBookCard(book) {
     var card = document.createElement('div');
     card.className = 'book-card';
@@ -3301,13 +3528,14 @@
         '<span class="book-ext-badge">' + (isEpub ? 'EPUB' : 'TXT') + '</span>' +
         '<div class="info-layer">' +
           '<p>格式：<span class="highlight">' + (isEpub ? 'EPUB' : 'TXT') + '</span></p>' +
+          (bookStatusTag(name) ? '<p>版本：<span class="highlight">' + escapeHtml(bookStatusTag(name)) + '</span></p>' : '') +
           '<p>进度：<span class="highlight">' + escapeHtml(chapLine) + '</span></p>' +
           '<p>已读：<span class="highlight">' + (pct === null ? '0%' : pct + '%') + '</span></p>' +
           '<span class="read-btn">' + (progress ? '继续阅读' : '开始阅读') + '</span>' +
         '</div>' +
         (pct === null ? '' : '<div class="book-prog-bar"><i style="width:' + pct + '%"></i></div>') +
       '</div>' +
-      '<div class="book-title">' + escapeHtml(name) + '</div>' +
+      '<div class="book-title" title="' + escapeHtml(name) + '">' + escapeHtml(displayBookName(name)) + '</div>' +
       (progress ? '<div class="book-progress">' + escapeHtml(chapLine) + '</div>' : '');
     card.addEventListener('click', function () {
       if (book._file && !book._localText && !book._localBuffer) {
