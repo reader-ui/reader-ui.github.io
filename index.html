@@ -460,6 +460,9 @@
     text-align: center;
     background: none;
     border: none;
+    display: block;
+    color: inherit;
+    text-decoration: none;
   }
 
   .book-cover {
@@ -2491,25 +2494,35 @@
   });
 
   // ============ Detect repo info from URL ============
+  // The first path segment is the repo name only on a project site. A user/org
+  // site (<owner>.github.io) is served from the domain root, so there the first
+  // segment is one of our own routes: reading it as a repo name made the deep
+  // link /books/X/1 look up the repo "books" and lose the whole book list.
+  var ROUTE_SEGMENT = 'books';
+
   function getRepoInfo() {
     const loc = window.location;
     const hostname = loc.hostname;
-    const path = loc.pathname;
 
     if (hostname.endsWith('.github.io')) {
       const owner = hostname.replace('.github.io', '');
-      const parts = path.split('/').filter(Boolean);
-      const repo = parts[0] || (owner + '.github.io');
-      return { owner, repo };
+      const parts = loc.pathname.split('/').filter(Boolean);
+      if (parts.length === 0 || parts[0] === ROUTE_SEGMENT) {
+        return { owner: owner, repo: owner + '.github.io', basePath: '/' };
+      }
+      return { owner: owner, repo: parts[0], basePath: '/' + parts[0] + '/' };
     }
     return null;
   }
 
   // ============ URL routing ============
-  // URL format: /repo/books/BookName/ChapterNumber
-  var basePath = '/';
+  // Every book gets its own sub-URL, built from the live book list, so a book
+  // dropped into the repo is addressable with no extra work here:
+  //   /books/<Book>                 a book sitting directly in books/
+  //   /books/<Category>/<Book>      a book inside a category folder
+  //   /books/<Category>/<Book>/<n>  one chapter of it (1-based)
   var info = getRepoInfo();
-  if (info && info.repo) basePath = '/' + info.repo + '/';
+  var basePath = (info && info.basePath) || '/';
 
   // Handle SPA redirect from 404.html
   (function () {
@@ -2528,18 +2541,27 @@
     return bookName.replace(/\.(txt|epub)$/i, '');
   }
 
-  function updateUrl(bookName, chapterIdx, replace) {
+  // The book's own sub-URL, optionally pointing at a chapter. Locally imported
+  // files live only in this tab, so they have no address to hand out.
+  function bookPath(book, chapterIdx) {
+    if (!book || book._file) return null;
+    var segs = [ROUTE_SEGMENT];
+    if (book._category) segs.push(encodeURIComponent(book._category));
+    segs.push(encodeURIComponent(getBookSlug(book.name)));
+    var path = basePath + segs.join('/');
+    if (typeof chapterIdx === 'number' && chapterIdx >= 0) path += '/' + (chapterIdx + 1);
+    return path;
+  }
+
+  function updateUrl(book, chapterIdx, replace) {
     if (!history.pushState) return;
-    var slug = encodeURIComponent(getBookSlug(bookName));
-    var chNum = chapterIdx + 1; // 1-based in URL
-    var newPath = basePath + 'books/' + slug + '/' + chNum;
-    if (window.location.pathname !== newPath) {
-      var state = { book: bookName, chapter: chapterIdx };
-      if (replace) {
-        history.replaceState(state, '', newPath);
-      } else {
-        history.pushState(state, '', newPath);
-      }
+    var newPath = bookPath(book, chapterIdx);
+    if (!newPath || window.location.pathname === newPath) return;
+    var state = { book: book.name, category: book._category || null, chapter: chapterIdx };
+    if (replace) {
+      history.replaceState(state, '', newPath);
+    } else {
+      history.pushState(state, '', newPath);
     }
   }
 
@@ -2550,20 +2572,41 @@
     }
   }
 
+  // The trailing segment counts as a chapter only when it is a number and
+  // something precedes it, so /books/<Book> stays the book's own URL. Segments
+  // are decoded one at a time: decoding the whole path first would let an
+  // escaped slash inside a title split into bogus segments.
   function parseUrlRoute() {
-    var path = decodeURIComponent(window.location.pathname);
-    // Match: /basePath/books/BookName/ChapterNumber
-    var prefix = basePath + 'books/';
-    if (!path.startsWith(prefix)) return null;
-    var rest = path.slice(prefix.length).replace(/\/$/, '');
-    // rest = "BookName/ChapterNumber" or "BookName"
-    var lastSlash = rest.lastIndexOf('/');
-    if (lastSlash > 0) {
-      var bookSlug = rest.slice(0, lastSlash);
-      var chNum = parseInt(rest.slice(lastSlash + 1), 10);
-      return { bookSlug: bookSlug, chapter: isNaN(chNum) ? 0 : chNum - 1 };
+    var prefix = basePath + ROUTE_SEGMENT;
+    var path = window.location.pathname;
+    if (path !== prefix && path.indexOf(prefix + '/') !== 0) return null;
+    var segs = path.slice(prefix.length).split('/').filter(Boolean).map(function (s) {
+      try { return decodeURIComponent(s); } catch (e) { return s; }
+    });
+    if (segs.length === 0) return null;
+    var chapter = 0;
+    if (segs.length > 1 && /^\d+$/.test(segs[segs.length - 1])) {
+      chapter = Math.max(0, parseInt(segs.pop(), 10) - 1);
     }
-    return { bookSlug: rest, chapter: 0 };
+    var bookSlug = segs.pop();
+    if (!bookSlug) return null;
+    return {
+      category: segs.length ? segs.join('/') : null,
+      bookSlug: bookSlug,
+      chapter: chapter
+    };
+  }
+
+  // Category + title is the real identity — two folders can hold the same
+  // title. A bare /books/<Book> link still resolves by title alone, so links
+  // shared before a book was filed into a category keep working.
+  function findBookByRoute(route) {
+    if (!route) return null;
+    var exact = books.find(function (b) {
+      return getBookSlug(b.name) === route.bookSlug && (b._category || null) === route.category;
+    });
+    if (exact) return exact;
+    return books.find(function (b) { return getBookSlug(b.name) === route.bookSlug; }) || null;
   }
 
   // Handle browser back/forward
@@ -2571,9 +2614,7 @@
     if (suppressPopState) return;
     var route = parseUrlRoute();
     if (route && books.length > 0) {
-      var match = books.find(function (b) {
-        return getBookSlug(b.name) === route.bookSlug;
-      });
+      var match = findBookByRoute(route);
       if (match) {
         suppressPopState = true;
         openBook(match, route.chapter).then(function () { suppressPopState = false; });
@@ -2755,10 +2796,11 @@
       }
       // Render books we have so far, then load category folders asynchronously
       renderBookGrid();
+      var catLoads = [];
       for (var cdi = 0; cdi < categoryDirs.length; cdi++) {
         (function (catDir) {
           var catUrl = 'https://api.github.com/repos/' + info.owner + '/' + info.repo + '/contents/books/' + encodeURIComponent(catDir.name) + '?ref=' + usedBranch;
-          fetch(catUrl).then(function (r) { return r.ok ? r.json() : null; }).then(function (catData) {
+          catLoads.push(fetch(catUrl).then(function (r) { return r.ok ? r.json() : null; }).then(function (catData) {
             if (!catData) return;
             var catBooks = catData.filter(function (f) { return f.name.endsWith('.txt') || f.name.endsWith('.epub'); });
             catBooks.forEach(function (cb) {
@@ -2766,16 +2808,17 @@
             });
             books = books.concat(catBooks);
             renderBookGrid();
-          }).catch(function () {});
+          }).catch(function () {}));
         })(categoryDirs[cdi]);
       }
 
-      // Priority 1: URL route (e.g. /repo/books/BookName/3)
+      // Priority 1: URL route. Books inside category folders only arrive with
+      // the fetches above, so a deep link has to let them finish before
+      // concluding the title does not exist.
       var route = parseUrlRoute();
       if (route) {
-        var routeMatch = books.find(function (b) {
-          return getBookSlug(b.name) === route.bookSlug;
-        });
+        if (catLoads.length) await Promise.all(catLoads);
+        var routeMatch = findBookByRoute(route);
         if (routeMatch) {
           $loading.style.display = 'none';
           openBook(routeMatch, route.chapter);
@@ -2952,7 +2995,7 @@
       goToChapter(chIdx);
       // Use replaceState for initial open so it doesn't create extra history
       if (currentBook && !book._localText) {
-        updateUrl(currentBook.name, chIdx, true);
+        updateUrl(currentBook, chIdx, true);
       }
       suppressPopState = false;
 
@@ -3374,7 +3417,7 @@
     // Save reading position & update URL
     saveReadingPosition();
     if (currentBook && !suppressPopState) {
-      updateUrl(currentBook.name, idx);
+      updateUrl(currentBook, idx);
     }
   }
 
@@ -3501,8 +3544,12 @@
   }
 
   function makeBookCard(book) {
-    var card = document.createElement('div');
+    // A real <a href> so each book's sub-URL can be copied, bookmarked and
+    // opened in a new tab; the click handler below keeps in-page navigation.
+    var href = bookPath(book);
+    var card = document.createElement(href ? 'a' : 'div');
     card.className = 'book-card';
+    if (href) card.href = href;
     var name = book.name.replace(/\.(txt|epub)$/i, '');
     var isEpub = /\.epub$/i.test(book.name);
     var pal = coverColors(name);
@@ -3537,7 +3584,11 @@
       '</div>' +
       '<div class="book-title" title="' + escapeHtml(name) + '">' + escapeHtml(displayBookName(name)) + '</div>' +
       (progress ? '<div class="book-progress">' + escapeHtml(chapLine) + '</div>' : '');
-    card.addEventListener('click', function () {
+    card.addEventListener('click', function (ev) {
+      // Leave ctrl/cmd/shift/alt-click to the browser so the href opens in a
+      // new tab or window instead of navigating in place.
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      ev.preventDefault();
       if (book._file && !book._localText && !book._localBuffer) {
         var isEp = /\.epub$/i.test(book._file.name);
         var reader = new FileReader();
