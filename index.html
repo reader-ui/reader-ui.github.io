@@ -728,6 +728,84 @@
     font-size: 13px;
   }
 
+  /* ---------- SF books (mini browser) ---------- */
+  .sf-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .sf-browser {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .sf-browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sf-browser-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .sf-browser-title {
+    margin-left: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .sf-browser-open {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 15px;
+    line-height: 1;
+    padding: 4px 7px;
+    border-radius: 6px;
+    transition: all var(--transition);
+  }
+
+  .sf-browser-open:hover { color: var(--accent); background: var(--accent-glow); }
+
+  .sf-browser-frame {
+    position: relative;
+    height: 72vh;
+    min-height: 420px;
+    background: var(--bg-card);
+  }
+
+  .sf-browser-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    border: 0;
+  }
+
+  /* Fallback link-card sits directly inside the chrome, no frame height. */
+  .sf-browser .link-card {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .sf-browser .link-card:hover { transform: none; }
+
   /* ---------- Local file picker ---------- */
   .local-upload { margin-top: 8px; }
 
@@ -780,6 +858,7 @@
     .book-search-icon { width: 36px; height: 36px; font-size: 15px; }
     .book-search-clear { right: 48px; }
     .links-list { grid-template-columns: 1fr; }
+    .sf-browser-frame { height: 60vh; min-height: 320px; }
   }
 
   @media (max-width: 520px) {
@@ -1950,6 +2029,10 @@
         <span class="icn">&#128279;</span>
         <span class="text">&#38142;&#25509;<i class="count" id="nav-link-count">&middot;</i></span>
       </button>
+      <button class="nav-a" data-tab="sf">
+        <span class="icn">&#128640;</span>
+        <span class="text">SF&#20070;&#24211;<i class="count" id="nav-sf-count">&middot;</i></span>
+      </button>
     </nav>
 
     <div class="header-spacer"></div>
@@ -1999,6 +2082,12 @@
       <div class="tab-panel" id="tab-links">
         <div class="links-list" id="links-list">
           <div class="links-empty">&#27491;&#22312;&#21152;&#36733;&#38142;&#25509;...</div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-sf">
+        <div class="sf-list" id="sf-list">
+          <div class="links-empty">&#27491;&#22312;&#21152;&#36733;...</div>
         </div>
       </div>
 
@@ -3727,6 +3816,7 @@
   // ============ Header stats / resume shortcut ============
   var $navBookCount = document.getElementById('nav-book-count');
   var $navLinkCount = document.getElementById('nav-link-count');
+  var $navSfCount   = document.getElementById('nav-sf-count');
   var $statTotal    = document.getElementById('stat-total');
   var $statCats     = document.getElementById('stat-cats');
   var $statReading  = document.getElementById('stat-reading');
@@ -3937,8 +4027,9 @@
 
   // ============ Tab switching (SFACG top nav) ============
   var tabBtns = document.querySelectorAll('.nav-a');
-  var tabPanels = { books: document.getElementById('tab-books'), links: document.getElementById('tab-links') };
+  var tabPanels = { books: document.getElementById('tab-books'), links: document.getElementById('tab-links'), sf: document.getElementById('tab-sf') };
   var linksLoaded = false;
+  var sfLoaded = false;
 
   tabBtns.forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -3954,6 +4045,10 @@
       if (target === 'links' && !linksLoaded) {
         linksLoaded = true;
         loadLinks();
+      }
+      if (target === 'sf' && !sfLoaded) {
+        sfLoaded = true;
+        loadSfBooks();
       }
     });
   });
@@ -4082,6 +4177,137 @@
     img.src = 'https://icons.duckduckgo.com/ip3/' + encodeURIComponent(host) + '.ico';
 
     return a;
+  }
+
+  // ============ SF books tab (mini browser) ============
+  // Same source format as urls.txt (url,description per line; # heading
+  // lines start a group), just pointed at sf.txt and rendered as embedded
+  // mini-browsers instead of plain cards.
+  var $sfList = document.getElementById('sf-list');
+
+  async function loadSfBooks() {
+    var text = null;
+    var info = getRepoInfo();
+
+    if (info) {
+      for (var branch of ['main', 'master']) {
+        try {
+          var res = await fetch('https://raw.githubusercontent.com/' + info.owner + '/' + info.repo + '/' + branch + '/sf.txt');
+          if (res.ok) { text = await res.text(); break; }
+        } catch (e) {}
+      }
+    }
+
+    if (text === null) {
+      try {
+        var res2 = await fetch('sf.txt');
+        if (res2.ok) text = await res2.text();
+      } catch (e) {}
+    }
+
+    if (text === null || text.trim() === '') {
+      $sfList.innerHTML =
+        '<div class="links-empty">还没有 SF 链接。<br>在仓库根目录建立 <code>sf.txt</code>，每行一条：' +
+        '<br><br><code>https://example.com,示例站点</code></div>';
+      $navSfCount.textContent = '0';
+      return;
+    }
+
+    text = normalizeText(text);
+    var lines = text.split('\n');
+    var items = [];
+    lines.forEach(function (raw) {
+      var line = raw.trim();
+      if (!line || line.charAt(0) === '#') return;
+      var commaIdx = line.indexOf(',');
+      var url, desc;
+      if (commaIdx > 0) {
+        url = line.slice(0, commaIdx).trim();
+        desc = line.slice(commaIdx + 1).trim();
+      } else {
+        url = line;
+        desc = '';
+      }
+      if (url) items.push({ url: url, desc: desc });
+    });
+
+    $navSfCount.textContent = items.length;
+
+    if (items.length === 0) {
+      $sfList.innerHTML = '<div class="links-empty">sf.txt 里还没有可用的链接。</div>';
+      return;
+    }
+
+    var frag = document.createDocumentFragment();
+    items.forEach(function (item) { frag.appendChild(makeSfBrowserBlock(item)); });
+    $sfList.innerHTML = '';
+    $sfList.appendChild(frag);
+  }
+
+  // A tiny embedded "browser": a title bar plus an iframe loading the link
+  // directly in the page. Lots of sites refuse to be framed (X-Frame-Options /
+  // CSP frame-ancestors) and there is no reliable client-side way to detect
+  // that — a blocked frame still fires `load` in most browsers, and reading
+  // the frame's own location always throws cross-origin whether it loaded or
+  // not. So this uses the two signals that *are* available: skip straight to
+  // the fallback when the target is plain http on an https page (the browser
+  // blocks that outright as mixed content, no point waiting), and otherwise
+  // give the iframe a few seconds — if nothing has settled it by then, assume
+  // it is blocked and fall back to the same link-card url.txt uses.
+  function makeSfBrowserBlock(item) {
+    var url = item.url;
+    var host = url;
+    try { host = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(url) ? url : 'https://' + url).hostname; } catch (e) {}
+    var label = item.desc || host.replace(/^www\./, '');
+
+    var wrap = document.createElement('div');
+    wrap.className = 'sf-browser';
+
+    var bar = document.createElement('div');
+    bar.className = 'sf-browser-bar';
+    bar.innerHTML =
+      '<span class="sf-browser-dot"></span><span class="sf-browser-dot"></span><span class="sf-browser-dot"></span>' +
+      '<span class="sf-browser-title">' + escapeHtml(label) + '</span>' +
+      '<a class="sf-browser-open" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer" title="在新标签页打开">&#8599;</a>';
+    wrap.appendChild(bar);
+
+    var frameHolder = document.createElement('div');
+    frameHolder.className = 'sf-browser-frame';
+    wrap.appendChild(frameHolder);
+
+    var pageIsHttps = location.protocol === 'https:';
+    var targetIsHttp = /^http:\/\//i.test(url);
+    if (pageIsHttps && targetIsHttp) {
+      frameHolder.replaceWith(makeLinkCard(item));
+      return wrap;
+    }
+
+    var settled = false;
+    var fallbackTimer = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      frameHolder.replaceWith(makeLinkCard(item));
+    }, 4000);
+
+    var iframe = document.createElement('iframe');
+    iframe.className = 'sf-browser-iframe';
+    iframe.setAttribute('referrerpolicy', 'no-referrer');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox');
+    iframe.addEventListener('load', function () {
+      if (settled) return;
+      settled = true;
+      clearTimeout(fallbackTimer);
+    });
+    iframe.addEventListener('error', function () {
+      if (settled) return;
+      settled = true;
+      clearTimeout(fallbackTimer);
+      frameHolder.replaceWith(makeLinkCard(item));
+    });
+    iframe.src = url;
+    frameHolder.appendChild(iframe);
+
+    return wrap;
   }
 
   // ============ Reading settings (typeface, line height) ============
