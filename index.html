@@ -3327,15 +3327,27 @@
         }
       }
     } else if (currentBook && currentBook.name.indexOf('恶役少爷怎么可能会是圣女') >= 0) {
-      // Every heading sits flush left as "第N卷 Title" (later volumes repeat the
-      // volume: "第五卷 第五卷 158~Title"); all body lines are indented. Titles mix
-      // "N~Title" with unnumbered notes (上架感言, 请假条…), so take every flush-left
-      // volume line rather than chaining numbers.
-      var eyRe = /^(第[0-9零一二三四五六七八九十百]+卷)[ \t　]+(?:第[0-9零一二三四五六七八九十百]+卷[ \t　]*)?(\S[^\n]*)/gm, eyM;
+      // Headings sit flush left and every body line is indented. Titles mix
+      // "N~Title" with unnumbered notes (上架感言, 请假条…), so from the first
+      // "~" heading on, every flush-left line is a chapter. One edition prefixes
+      // the volume ("第一卷 1~Title", later "第五卷 第五卷 158~Title"); the 【月漪】
+      // scan has none, so there a fresh 序章 is what opens the next volume.
+      var EY_NUM = '[0-9零一二三四五六七八九十百]';
+      var eyRe = new RegExp('^(?:(第' + EY_NUM + '+卷)[ \\t\\u3000]+(?:第' + EY_NUM + '+卷[ \\t\\u3000]*)?)?([^\\s\\u3000][^\\n]*)', 'gm');
+      var eyVolNames = '一二三四五六七八九十', eyVolN = 0, eyStarted = false, eyM;
       while ((eyM = eyRe.exec(text)) !== null) {
         var eyT = eyM[2].trim();
-        if (eyT.length > 100) continue;
-        splits.push({ index: eyM.index, title: eyT, volume: eyM[1] });
+        if (!eyStarted) {
+          if (!/^\S+~/.test(eyT)) continue;
+          eyStarted = true;
+        }
+        if (eyT.length > 40) continue;
+        // In the 【月漪】 scan a scrubbed body line can lose its indent; real
+        // non-"~" headings are short bare labels (上架感言, 序章（4600字）, 终幕).
+        if (!/^\S+~/.test(eyT) && !/^[一-鿿（）0-9]{2,12}$/.test(eyT)) continue;
+        if (!eyM[1] && /^序章/.test(eyT)) eyVolN++;
+        var eyVol = eyM[1] || (eyVolN ? '第' + (eyVolNames.charAt(eyVolN - 1) || eyVolN) + '卷' : undefined);
+        splits.push({ index: eyM.index, title: eyT, volume: eyVol });
       }
     } else if (currentBook && currentBook.name.indexOf('因为怕痛就把攻击全闪避了') >= 0) {
       // Book uses "N~Title" for real chapters, but in-story game/system text
