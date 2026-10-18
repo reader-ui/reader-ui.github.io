@@ -2718,6 +2718,18 @@
   });
 
   // ============ Text normalization ============
+  // Books are meant to be UTF-8, but Chinese TXT downloads are often GBK.
+  // Strict UTF-8 first; if that fails the bytes can't be UTF-8, so try GB18030.
+  async function readResponseText(res) {
+    var buf = await res.arrayBuffer();
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+    } catch (e) {
+      try { return new TextDecoder('gb18030').decode(buf); }
+      catch (e2) { return new TextDecoder('utf-8').decode(buf); }
+    }
+  }
+
   function normalizeText(text) {
     // Strip BOM and normalize line endings to \n
     return text.replace(/\uFEFF/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -3066,13 +3078,13 @@
           for (var pi = 0; pi < partFiles.length; pi++) {
             var pr = await fetch(partFiles[pi].download_url);
             if (!pr.ok) throw new Error('Failed to load part ' + partFiles[pi].name);
-            parts.push(await pr.text());
+            parts.push(await readResponseText(pr));
           }
           text = parts.join('\n');
         } else {
           var res = await fetch(book.download_url);
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          text = await res.text();
+          text = await readResponseText(res);
         }
         text = cleanWatermark(normalizeText(text));
         parseChapters(text);
@@ -3314,6 +3326,17 @@
           splits[mgi].volume = mgVols[mgv].title;
         }
       }
+    } else if (currentBook && currentBook.name.indexOf('恶役少爷怎么可能会是圣女') >= 0) {
+      // Every heading sits flush left as "第N卷 Title" (later volumes repeat the
+      // volume: "第五卷 第五卷 158~Title"); all body lines are indented. Titles mix
+      // "N~Title" with unnumbered notes (上架感言, 请假条…), so take every flush-left
+      // volume line rather than chaining numbers.
+      var eyRe = /^(第[0-9零一二三四五六七八九十百]+卷)[ \t　]+(?:第[0-9零一二三四五六七八九十百]+卷[ \t　]*)?(\S[^\n]*)/gm, eyM;
+      while ((eyM = eyRe.exec(text)) !== null) {
+        var eyT = eyM[2].trim();
+        if (eyT.length > 100) continue;
+        splits.push({ index: eyM.index, title: eyT, volume: eyM[1] });
+      }
     } else if (currentBook && currentBook.name.indexOf('因为怕痛就把攻击全闪避了') >= 0) {
       // Book uses "N~Title" for real chapters, but in-story game/system text
       // also contains "第X章"-style phrases, which would make Strategy 1 match
@@ -3402,6 +3425,11 @@
       // Separate the title line from body
       var nlIdx = raw.indexOf('\n');
       var body = nlIdx >= 0 ? raw.slice(nlIdx + 1).trim() : '';
+      // Some scrapes repeat the heading as the first body line — drop the echo.
+      var bodyNl = body.indexOf('\n');
+      if ((bodyNl >= 0 ? body.slice(0, bodyNl) : body).trim() === splits[i].title) {
+        body = bodyNl >= 0 ? body.slice(bodyNl + 1).trim() : '';
+      }
       chapters.push({ title: splits[i].title, content: body, volume: splits[i].volume });
     }
   }
