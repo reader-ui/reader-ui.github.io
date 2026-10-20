@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="在线书架与阅读器 — TXT / EPUB 小说，按章节阅读，记住进度。">
 <title>Book Reader</title>
 <style>
   :root {
@@ -1997,8 +1998,15 @@
     .site-header, .site-subbar { touch-action: none; }
   }
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Warm up the connections the first screen needs before anything asks for them. -->
+<link rel="preconnect" href="https://api.github.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- The CJK webfonts are megabytes and the system fallbacks read fine, so they
+     must never hold up first paint: fetch as print-only, then switch on. -->
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap"></noscript>
+<!-- JSZip is only needed for EPUBs; ensureJSZip() loads it on demand. -->
 </head>
 <body>
 
@@ -2479,7 +2487,8 @@
     // For large chapter lists, rebuild only the matching items instead of
     // toggling visibility on 1000+ DOM nodes
     var qLower = query.toLowerCase();
-    var frag = document.createDocumentFragment();
+    var marked = bookmarkedSet();
+    var html = '';
     var visibleCount = 0;
     var lastVol = null;
 
@@ -2490,17 +2499,12 @@
       // Volume bands only make sense on the unfiltered list
       if (!query && chapters[i].volume && chapters[i].volume !== lastVol) {
         lastVol = chapters[i].volume;
-        var vh = document.createElement('div');
-        vh.className = 'vol-head';
-        vh.textContent = lastVol;
-        frag.appendChild(vh);
+        html += '<div class="vol-head">' + escapeHtml(lastVol) + '</div>';
       }
 
-      var el = document.createElement('div');
-      el.className = 'chapter-item' +
+      var cls = 'chapter-item' +
         (i === currentChapterIndex ? ' active' : '') +
-        (isChapterBookmarked(i) ? ' bookmarked' : '');
-      el.setAttribute('data-idx', i);
+        (marked[i] ? ' bookmarked' : '');
 
       var titleHtml;
       if (query) {
@@ -2513,13 +2517,11 @@
       } else {
         titleHtml = escapeHtml(title);
       }
-      el.innerHTML = chapterItemInner(i, titleHtml);
-      frag.appendChild(el);
+      html += '<div class="' + cls + '" data-idx="' + i + '">' + chapterItemInner(i, titleHtml) + '</div>';
       visibleCount++;
     }
 
-    $chapterList.innerHTML = '';
-    $chapterList.appendChild(frag);
+    $chapterList.innerHTML = html;
     $chapterNoResults.classList.toggle('visible', visibleCount === 0 && query.length > 0);
   }
 
@@ -2572,15 +2574,22 @@
   }
 
   // ============ Progress bar ============
+  // Scroll fires far more often than frames paint — measure at most once a frame.
+  var progressFrame = 0;
   $readerContent.addEventListener('scroll', function () {
-    const el = $readerContent;
-    const pct = el.scrollTop / (el.scrollHeight - el.clientHeight) * 100;
-    $progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+    if (!progressFrame) {
+      progressFrame = requestAnimationFrame(function () {
+        progressFrame = 0;
+        const el = $readerContent;
+        const pct = el.scrollTop / (el.scrollHeight - el.clientHeight) * 100;
+        $progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+      });
+    }
 
     // Debounce save scroll position
     clearTimeout(scrollSaveTimer);
     scrollSaveTimer = setTimeout(saveReadingPosition, 300);
-  });
+  }, { passive: true });
 
   // ============ Detect repo info from URL ============
   // The first path segment is the repo name only on a project site. A user/org
@@ -2735,6 +2744,76 @@
     return text.replace(/\uFEFF/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   }
 
+  // ============ JSZip on demand ============
+  // ~100 KB of script only EPUBs need \u2014 never let it block a TXT reader.
+  var jszipPromise = null;
+  function ensureJSZip() {
+    if (typeof JSZip !== 'undefined') return Promise.resolve(JSZip);
+    if (!jszipPromise) {
+      jszipPromise = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.async = true;
+        s.onload = function () { resolve(JSZip); };
+        s.onerror = function () { jszipPromise = null; reject(new Error('JSZip library not loaded')); };
+        document.head.appendChild(s);
+      });
+    }
+    return jszipPromise;
+  }
+
+  // ============ Book text cache ============
+  // A book's git blob sha changes exactly when its bytes do, so the decoded,
+  // cleaned text is cached under that sha: reopening a multi-MB book skips
+  // both the download and the GBK/watermark pass.
+  var BOOK_CACHE = 'reader-books-v1';
+  function bookCacheKey(sha) { return basePath + '__book-cache__/' + sha; }
+
+  async function getCachedBookText(sha) {
+    if (!sha || !window.caches) return null;
+    try {
+      var cache = await caches.open(BOOK_CACHE);
+      var hit = await cache.match(bookCacheKey(sha));
+      return hit ? await hit.text() : null;
+    } catch (e) { return null; }
+  }
+
+  function putCachedBookText(sha, text) {
+    if (!sha || !window.caches) return;
+    caches.open(BOOK_CACHE).then(function (cache) {
+      return cache.put(bookCacheKey(sha), new Response(text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
+    }).catch(function () { /* quota or private mode \u2014 just skip caching */ });
+  }
+
+  // Drop cached texts whose sha is no longer in the repo (book replaced or removed).
+  function pruneBookCache(liveShas) {
+    if (!window.caches) return;
+    caches.open(BOOK_CACHE).then(function (cache) {
+      return cache.keys().then(function (reqs) {
+        reqs.forEach(function (req) {
+          var sha = req.url.slice(req.url.lastIndexOf('/') + 1);
+          if (!liveShas[sha]) cache.delete(req);
+        });
+      });
+    }).catch(function () {});
+  }
+
+  // Same-origin copy first (served by Pages' CDN on the connection we already
+  // have); a file committed seconds ago may not be deployed yet, so fall back
+  // to raw.githubusercontent.com.
+  async function fetchRepoFile(file) {
+    var urls = [file.download_url, file._rawUrl].filter(Boolean);
+    var lastErr = null;
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        var res = await fetch(urls[i]);
+        if (res.ok) return res;
+        lastErr = new Error('HTTP ' + res.status);
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('No URL for ' + file.name);
+  }
+
   // ============ 【月漪】 watermark scrubbing ============
   // Scans from this group carry two kinds of noise: a QQ-group advert block
   // repeated every few chapters, and short runs of garbage characters spliced
@@ -2860,6 +2939,93 @@
   }
 
   // ============ Load book list ============
+  // One Git Trees call lists every folder at once (the old per-folder contents
+  // calls cost 1 + N of the 60 anonymous API calls an hour). The result is
+  // kept in localStorage, so a repeat visit paints the shelf — and resumes the
+  // open book — before the network answers; the fresh tree then replaces it.
+  var INDEX_CACHE_KEY = 'reader-index-v1';
+  // Folders that hold one book split into parts, not a category of books
+  var MULTIPART_BOOKS = ['重生龙骑士', '当成为小姐姐之后'];
+
+  function isBookFile(n) { return n.endsWith('.txt') || n.endsWith('.epub'); }
+  function encodePath(p) { return p.split('/').map(encodeURIComponent).join('/'); }
+
+  function booksFromTree(info, branch, tree) {
+    var rawBase = 'https://raw.githubusercontent.com/' + info.owner + '/' + info.repo + '/' + branch + '/';
+    function fileEntry(e, name) {
+      return {
+        name: name, path: e.path, sha: e.sha, size: e.size, type: 'file',
+        download_url: basePath + encodePath(e.path),
+        _rawUrl: rawBase + encodePath(e.path)
+      };
+    }
+    var top = [], dirs = [], children = {};
+    tree.forEach(function (e) {
+      var segs = e.path.slice('books/'.length).split('/');
+      if (segs.length === 1) {
+        if (e.type === 'tree') dirs.push(segs[0]);
+        else if (isBookFile(segs[0])) top.push(fileEntry(e, segs[0]));
+      } else if (segs.length === 2 && e.type === 'blob') {
+        (children[segs[0]] = children[segs[0]] || []).push(fileEntry(e, segs[1]));
+      }
+    });
+    var out = top;
+    var categorized = [];
+    dirs.forEach(function (d) {
+      var kids = children[d] || [];
+      if (MULTIPART_BOOKS.some(function (m) { return d.indexOf(m) >= 0; })) {
+        var parts = kids.filter(function (k) { return k.name.endsWith('.txt'); })
+          .sort(function (a, b) { return a.name.localeCompare(b.name); });
+        if (!parts.length) return;
+        out.push({
+          name: d + '.txt', _multipart: true, _dirName: d, _parts: parts,
+          sha: parts.map(function (p) { return p.sha; }).join('-')
+        });
+      } else {
+        kids.forEach(function (k) {
+          if (!isBookFile(k.name)) return;
+          k._category = d;
+          categorized.push(k);
+        });
+      }
+    });
+    return out.concat(categorized);
+  }
+
+  async function fetchBookTree(info) {
+    for (var branch of ['main', 'master']) {
+      try {
+        var res = await fetch('https://api.github.com/repos/' + info.owner + '/' + info.repo + '/git/trees/' + branch + '?recursive=1');
+        if (res.ok) {
+          var data = await res.json();
+          var tree = (data.tree || []).filter(function (e) { return e.path.indexOf('books/') === 0; })
+            .map(function (e) { return { path: e.path, type: e.type, sha: e.sha, size: e.size }; });
+          return { owner: info.owner, repo: info.repo, branch: branch, tree: tree };
+        }
+        // Rate-limited: asking about master too would only burn another call.
+        if (res.status === 403 || res.status === 429) return null;
+      } catch (e) { return null; }
+    }
+    return null;
+  }
+
+  function saveIndex(idx) {
+    try { localStorage.setItem(INDEX_CACHE_KEY, JSON.stringify(idx)); } catch (e) {}
+  }
+
+  function liveShaSet(list) {
+    var set = {};
+    list.forEach(function (b) {
+      if (b.sha) set[b.sha] = true;
+    });
+    return set;
+  }
+
+  // Keep locally imported files when the repo list is swapped for a fresh one.
+  function localBooks() {
+    return books.filter(function (b) { return b._file || b._localText || b._localBuffer; });
+  }
+
   async function loadBooks() {
     const info = getRepoInfo();
 
@@ -2871,55 +3037,42 @@
     }
 
     try {
-      // Try default branch (main), fallback to master
-      let data = await fetchBookList(info, 'main');
-      let usedBranch = 'main';
-      if (!data) { data = await fetchBookList(info, 'master'); usedBranch = 'master'; }
-      if (!data) {
+      var cached = null;
+      try { cached = JSON.parse(localStorage.getItem(INDEX_CACHE_KEY)); } catch (e) {}
+      if (cached && (cached.owner !== info.owner || cached.repo !== info.repo || !Array.isArray(cached.tree))) cached = null;
+
+      var freshPromise = fetchBookTree(info);
+      var idx = cached || await freshPromise;
+      if (!idx) {
         $loading.style.display = 'none';
         $welcome.style.display = '';
         return;
       }
 
-      books = data.filter(f => f.name.endsWith('.txt') || f.name.endsWith('.epub'));
-      // Subfolders: known multi-part books, others are categories
-      var multipartBooks = ['重生龙骑士', '当成为小姐姐之后'];
-      var subDirs = data.filter(f => f.type === 'dir');
-      var categoryDirs = [];
-      for (var sdi = 0; sdi < subDirs.length; sdi++) {
-        var sd = subDirs[sdi];
-        var isMultipart = multipartBooks.some(function (m) { return sd.name.indexOf(m) >= 0; });
-        if (isMultipart) {
-          books.push({ name: sd.name + '.txt', _multipart: true, _dirName: sd.name, _info: info });
-        } else {
-          categoryDirs.push(sd);
-        }
-      }
-      // Render books we have so far, then load category folders asynchronously
+      books = booksFromTree(info, idx.branch, idx.tree).concat(localBooks());
       renderBookGrid();
-      var catLoads = [];
-      for (var cdi = 0; cdi < categoryDirs.length; cdi++) {
-        (function (catDir) {
-          var catUrl = 'https://api.github.com/repos/' + info.owner + '/' + info.repo + '/contents/books/' + encodeURIComponent(catDir.name) + '?ref=' + usedBranch;
-          catLoads.push(fetch(catUrl).then(function (r) { return r.ok ? r.json() : null; }).then(function (catData) {
-            if (!catData) return;
-            var catBooks = catData.filter(function (f) { return f.name.endsWith('.txt') || f.name.endsWith('.epub'); });
-            catBooks.forEach(function (cb) {
-              cb._category = catDir.name;
-            });
-            books = books.concat(catBooks);
-            renderBookGrid();
-          }).catch(function () {}));
-        })(categoryDirs[cdi]);
-      }
 
-      // Priority 1: URL route. Books inside category folders only arrive with
-      // the fetches above, so a deep link has to let them finish before
-      // concluding the title does not exist.
+      // Revalidate the cached shelf in the background.
+      var freshApplied = freshPromise.then(function (fresh) {
+        if (!fresh) return false;
+        var changed = !cached || JSON.stringify(fresh.tree) !== JSON.stringify(cached.tree) || fresh.branch !== cached.branch;
+        if (changed) saveIndex(fresh);
+        if (cached && changed) {
+          books = booksFromTree(info, fresh.branch, fresh.tree).concat(localBooks());
+          renderBookGrid();
+        }
+        pruneBookCache(liveShaSet(booksFromTree(info, fresh.branch, fresh.tree).reduce(function (acc, b) {
+          return acc.concat(b._parts || [], [b]);
+        }, [])));
+        return changed;
+      });
+
+      // Priority 1: URL route. A deep link to a book added since the cached
+      // list was saved only resolves once the fresh list is in.
       var route = parseUrlRoute();
       if (route) {
-        if (catLoads.length) await Promise.all(catLoads);
         var routeMatch = findBookByRoute(route);
+        if (!routeMatch && cached && await freshApplied) routeMatch = findBookByRoute(route);
         if (routeMatch) {
           $loading.style.display = 'none';
           openBook(routeMatch, route.chapter);
@@ -2946,19 +3099,12 @@
     }
   }
 
-  async function fetchBookList(info, branch) {
-    const url = 'https://api.github.com/repos/' + info.owner + '/' + info.repo + '/contents/books?ref=' + branch;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return res.json();
-  }
-
   // ============ Render book grid ============
   // (defined below, after local file logic)
 
   // ============ EPUB parsing ============
   async function parseEpub(arrayBuffer) {
-    if (typeof JSZip === 'undefined') throw new Error('JSZip library not loaded');
+    await ensureJSZip();
     var zip = await JSZip.loadAsync(arrayBuffer);
 
     // 1. Read container.xml to find OPF path
@@ -3054,39 +3200,33 @@
         if (book._localBuffer) {
           ab = book._localBuffer;
         } else {
-          var er = await fetch(book.download_url);
-          if (!er.ok) throw new Error('HTTP ' + er.status);
-          ab = await er.arrayBuffer();
+          ab = await (await fetchRepoFile(book)).arrayBuffer();
         }
         chapters = await parseEpub(ab);
       } else {
         var text;
         if (book._localText) {
-          text = book._localText;
-        } else if (book._multipart) {
-          // Fetch parts from subfolder and concatenate
-          var partsInfo = book._info;
-          var partsList = null;
-          for (var br of ['main', 'master']) {
-            var pUrl = 'https://api.github.com/repos/' + partsInfo.owner + '/' + partsInfo.repo + '/contents/books/' + encodeURIComponent(book._dirName) + '?ref=' + br;
-            var pRes = await fetch(pUrl);
-            if (pRes.ok) { partsList = await pRes.json(); break; }
-          }
-          if (!partsList) throw new Error('Could not load book parts');
-          var partFiles = partsList.filter(f => f.name.endsWith('.txt')).sort(function (a, b) { return a.name.localeCompare(b.name); });
-          var parts = [];
-          for (var pi = 0; pi < partFiles.length; pi++) {
-            var pr = await fetch(partFiles[pi].download_url);
-            if (!pr.ok) throw new Error('Failed to load part ' + partFiles[pi].name);
-            parts.push(await readResponseText(pr));
-          }
-          text = parts.join('\n');
+          text = cleanWatermark(normalizeText(book._localText));
         } else {
-          var res = await fetch(book.download_url);
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          text = await readResponseText(res);
+          text = await getCachedBookText(book.sha);
+          if (text === null) {
+            var raw;
+            if (book._multipart) {
+              // All parts download in parallel, then join in name order.
+              var parts = book._parts || [];
+              if (!parts.length) throw new Error('Could not load book parts');
+              raw = (await Promise.all(parts.map(function (part) {
+                return fetchRepoFile(part).then(readResponseText, function () {
+                  throw new Error('Failed to load part ' + part.name);
+                });
+              }))).join('\n');
+            } else {
+              raw = await readResponseText(await fetchRepoFile(book));
+            }
+            text = cleanWatermark(normalizeText(raw));
+            putCachedBookText(book.sha, text);
+          }
         }
-        text = cleanWatermark(normalizeText(text));
         parseChapters(text);
       }
       renderChapterList();
@@ -3448,24 +3588,19 @@
 
   // ============ Render chapter list ============
   function renderChapterList() {
-    var frag = document.createDocumentFragment();
+    // One HTML string and one parse — books here run to thousands of chapters.
+    var marked = bookmarkedSet();
+    var html = '';
     var lastVol = null;
     for (var i = 0; i < chapters.length; i++) {
       if (chapters[i].volume && chapters[i].volume !== lastVol) {
         lastVol = chapters[i].volume;
-        var vh = document.createElement('div');
-        vh.className = 'vol-head';
-        vh.textContent = lastVol;
-        frag.appendChild(vh);
+        html += '<div class="vol-head">' + escapeHtml(lastVol) + '</div>';
       }
-      var el = document.createElement('div');
-      el.className = 'chapter-item' + (isChapterBookmarked(i) ? ' bookmarked' : '');
-      el.setAttribute('data-idx', i);
-      el.innerHTML = chapterItemInner(i, escapeHtml(chapters[i].title));
-      frag.appendChild(el);
+      html += '<div class="chapter-item' + (marked[i] ? ' bookmarked' : '') + '" data-idx="' + i + '">' +
+        chapterItemInner(i, escapeHtml(chapters[i].title)) + '</div>';
     }
-    $chapterList.innerHTML = '';
-    $chapterList.appendChild(frag);
+    $chapterList.innerHTML = html;
   }
 
   // Event delegation — single listener handles all chapter clicks
@@ -3564,10 +3699,11 @@
   // (Keyboard shortcuts defined below, after all features are set up)
 
   // ============ Utils ============
+  // Runs once per paragraph and per catalog row, so plain string work instead
+  // of a throwaway DOM node; quotes escaped too, for attribute values.
+  var HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   function escapeHtml(s) {
-    var d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return HTML_ESCAPES[c]; });
   }
 
   // ============ Local file loading ============
@@ -3788,6 +3924,7 @@
   function renderBookGrid() {
     renderCategoryFilter();
     updateHeaderStats();
+    if (coverObserver) coverObserver.disconnect();  // the old cards are going away
     $bookGrid.innerHTML = '';
 
     // Category scoping (same rules as before, just factored out so search can reuse it).
@@ -3914,9 +4051,31 @@
   var coverActive = 0;
   var MAX_COVER_CONCURRENT = 3;
 
+  // A cover means downloading the whole EPUB (several MB), so wait until its
+  // card is actually on screen — a hidden shelf behind the reader, or a card
+  // far down the page, costs nothing. Cached covers apply right away.
+  var coverObserver = ('IntersectionObserver' in window) ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      coverObserver.unobserve(en.target);
+      var job = en.target._coverJob;
+      en.target._coverJob = null;
+      if (job) { coverQueue.push(job); pumpCoverQueue(); }
+    });
+  }, { rootMargin: '300px 0px' }) : null;
+
   function queueCoverLoad(book, card) {
-    coverQueue.push({ book: book, card: card });
-    pumpCoverQueue();
+    var job = { book: book, card: card };
+    var key = getCoverCacheKey(book);
+    var cached = null;
+    if (key) { try { cached = localStorage.getItem(key); } catch (e) {} }
+    if (book._coverDataUrl || cached || !coverObserver) {
+      coverQueue.push(job);
+      pumpCoverQueue();
+      return;
+    }
+    card._coverJob = job;
+    coverObserver.observe(card);
   }
 
   function pumpCoverQueue() {
@@ -3957,7 +4116,7 @@
   // Parses just enough of the EPUB (container.xml → OPF → manifest) to locate
   // and extract the cover image, without doing a full chapter parse.
   async function extractEpubCoverDataUrl(arrayBuffer) {
-    if (typeof JSZip === 'undefined') return null;
+    await ensureJSZip();
     var zip = await JSZip.loadAsync(arrayBuffer);
 
     var containerFile = zip.file('META-INF/container.xml');
@@ -4044,9 +4203,7 @@
       } else if (book._file) {
         ab = await book._file.arrayBuffer();
       } else if (book.download_url) {
-        var res = await fetch(book.download_url);
-        if (!res.ok) return;
-        ab = await res.arrayBuffer();
+        ab = await (await fetchRepoFile(book)).arrayBuffer();
       } else {
         return;
       }
@@ -4586,6 +4743,16 @@
     if (!key) return false;
     var bm = getBookmarks();
     return !!(bm[key] && bm[key].indexOf(i) >= 0);
+  }
+
+  // Every bookmarked chapter of the open book, read from storage once — for
+  // loops over the whole catalog, where isChapterBookmarked would re-parse it per row.
+  function bookmarkedSet() {
+    var set = {};
+    var key = getBookmarkKey();
+    var list = key ? getBookmarks()[key] : null;
+    if (list) list.forEach(function (i) { set[i] = true; });
+    return set;
   }
 
   function isCurrentChapterBookmarked() {
