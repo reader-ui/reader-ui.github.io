@@ -3575,6 +3575,21 @@
           return !!m && m[1] === name;
         };
       });
+    } else if (currentBook && currentBook.name.indexOf('当成为小姐姐之后') >= 0) {
+      // Three sections, each opened by a flush-left label: "番外 小天使异界求生日记",
+      // "番外 另一条时间线" and "正文" (the last two restart at 第0001章). Headings
+      // sit flush left, including ~540 half-steps ("第0625.5章", "第1999.99章")
+      // that the generic numbering chain dropped into the chapter before, plus
+      // the unnumbered 新年番外-… and 完结撒花和结语.
+      var xjRe = /^(番外 [^\n]+|正文|第[0-9]+(?:\.[0-9]+)?章[^\n]*|新年番外[^\n]*|完结撒花[^\n]*)$/gm, xjM, xjVol;
+      while ((xjM = xjRe.exec(text)) !== null) {
+        var xjT = xjM[1].trim();
+        if (/^(?:番外 |正文$)/.test(xjT)) { xjVol = xjT; continue; }
+        splits.push({ index: xjM.index, title: xjT, volume: xjVol });
+      }
+      // Blank the section labels in place (same length, so every index above
+      // still holds) to keep them out of the end of the chapter before.
+      text = text.replace(/^(?:番外 [^\n]+|正文)$/gm, function (m) { return ' '.repeat(m.length); });
     } else if (currentBook && currentBook.name.indexOf('因为怕痛就把攻击全闪避了') >= 0) {
       // Book uses "N~Title" for real chapters, but in-story game/system text
       // also contains "第X章"-style phrases, which would make Strategy 1 match
