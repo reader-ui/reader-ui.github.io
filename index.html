@@ -1071,6 +1071,13 @@
 
   .chapter-no-results.visible { display: block; }
 
+  /* End of the catalog while the rest of the book is still downloading */
+  .chapter-loading {
+    padding: 16px 22px 20px;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
   .chapter-item .highlight {
     background: rgba(216, 106, 54, 0.22);
     border-radius: 2px;
@@ -1286,6 +1293,9 @@
     font-family: "Noto Serif SC", "Source Han Serif CN", "Songti SC", Georgia, serif;
     transition: font-size var(--transition);
   }
+
+  /* Blocks of a very long chapter: laid out only near the viewport. */
+  .p-block { content-visibility: auto; }
 
   .article-content p {
     text-indent: 2em;
@@ -2569,9 +2579,32 @@
       book: currentBook.name,
       chapter: currentChapterIndex,
       scroll: $readerContent.scrollTop,
-      total: $readerContent.scrollHeight
+      total: $readerContent.scrollHeight,
+      anchor: scrollAnchor()
     };
     localStorage.setItem('reader-position', JSON.stringify(pos));
+  }
+
+  // A long chapter is split into blocks that are only estimated until drawn
+  // (see blockedHtml), so a pixel offset alone would not survive a reload:
+  // the block at the top of the view and the offset into it are kept as well.
+  function scrollAnchor() {
+    var blocks = $readerText.children;
+    if (!blocks.length || !blocks[0].classList.contains('p-block')) return null;
+    var top = $readerContent.getBoundingClientRect().top;
+    var lo = 0, hi = blocks.length - 1;
+    while (lo < hi) {  // last block starting at or above the top of the view
+      var mid = (lo + hi + 1) >> 1;
+      if (blocks[mid].getBoundingClientRect().top <= top) lo = mid; else hi = mid - 1;
+    }
+    return [lo, Math.round(top - blocks[lo].getBoundingClientRect().top)];
+  }
+
+  function scrollToAnchor(anchor) {
+    var block = anchor && $readerText.children[anchor[0]];
+    if (!block || !block.classList.contains('p-block')) return false;
+    $readerContent.scrollTop += block.getBoundingClientRect().top - $readerContent.getBoundingClientRect().top + anchor[1];
+    return true;
   }
 
   function clearReadingPosition() {
@@ -2748,6 +2781,85 @@
       try { return new TextDecoder('gb18030').decode(buf); }
       catch (e2) { return new TextDecoder('utf-8').decode(buf); }
     }
+  }
+
+  // Same text as readResponseText, decoded as the bytes arrive: onText(text,
+  // bytes) runs after every chunk so a reader can show what is already here.
+  async function streamResponseText(res, onText) {
+    if (!res.body || !res.body.getReader) return readResponseText(res);
+    var reader = res.body.getReader();
+    var dec = new TextDecoder('utf-8', { fatal: true });
+    var chunks = [];  // kept until the bytes have proved to be UTF-8
+    var text = '', bytes = 0, r;
+    function notUtf8() {
+      try { dec = new TextDecoder('gb18030'); } catch (e) { dec = new TextDecoder('utf-8'); }
+      text = chunks.map(function (c) { return dec.decode(c, { stream: true }); }).join('');
+      chunks = null;
+    }
+    while (!(r = await reader.read()).done) {
+      bytes += r.value.length;
+      if (chunks) {
+        chunks.push(r.value);
+        try { text += dec.decode(r.value, { stream: true }); } catch (e) { notUtf8(); }
+      } else {
+        text += dec.decode(r.value, { stream: true });
+      }
+      onText(text, bytes);
+    }
+    if (chunks) {
+      try { return text + dec.decode(); } catch (e) { notUtf8(); }
+    }
+    return text + dec.decode();
+  }
+
+  // Download a TXT book — every part of a multipart one, in order — and
+  // report progress as (text received so far, in order, and the fraction done).
+  function downloadBookText(book, onText) {
+    var files = book._multipart ? (book._parts || []) : [book];
+    if (!files.length) return Promise.reject(new Error('Could not load book parts'));
+    var got = files.map(function () { return ''; });
+    var done = files.map(function () { return false; });
+    var bytes = files.map(function () { return 0; });
+    var total = files.reduce(function (s, f) { return s + (f.size || 0); }, 0);
+    function report() {
+      var s = '';
+      for (var i = 0; i < files.length; i++) {
+        s += (i ? '\n' : '') + got[i];
+        if (!done[i]) break;
+      }
+      var n = bytes.reduce(function (a, b) { return a + b; }, 0);
+      onText(s, total ? Math.min(1, n / total) : 0);
+    }
+    // Parts download one after another so the front of the book arrives
+    // first, but each next request goes out when the current part is three
+    // quarters in: Pages takes ~1 s to start answering a big file, and that
+    // wait then overlaps the tail of the part before.
+    var responses = [];
+    function start(i) {
+      if (i < files.length && !responses[i]) {
+        responses[i] = fetchRepoFile(files[i]);
+        responses[i].catch(function () {});  // reported when its turn comes
+      }
+    }
+    start(0);
+    var chain = Promise.resolve();
+    files.forEach(function (f, i) {
+      chain = chain.then(function () {
+        start(i);
+        return responses[i]
+          .then(function (res) {
+            return streamResponseText(res, function (t, b) {
+              got[i] = t; bytes[i] = b;
+              if (b >= 0.75 * (f.size || Infinity)) start(i + 1);
+              report();
+            });
+          })
+          .then(function (t) { got[i] = t; done[i] = true; }, function (e) {
+            throw book._multipart ? new Error('Failed to load part ' + f.name) : e;
+          });
+      });
+    });
+    return chain.then(function () { return got.join('\n'); });
   }
 
   function normalizeText(text) {
@@ -3160,7 +3272,7 @@
         var match = books.find(function (b) { return b.name === saved.book; });
         if (match) {
           $loading.style.display = 'none';
-          openBook(match, saved.chapter, saved.scroll);
+          openBook(match, saved.chapter, saved.scroll, saved.anchor);
           return;
         }
       }
@@ -3247,11 +3359,11 @@
   }
 
   // ============ Open a book ============
-  async function openBook(book, resumeChapter, resumeScroll) {
+  async function openBook(book, resumeChapter, resumeScroll, resumeAnchor) {
     var displayName = displayBookName(book.name);
     $welcome.style.display = 'none';
     $reader.classList.add('active');
-    $readerText.innerHTML = '<div class="load-state"><div class="spinner" style="margin:0 auto 16px;"></div>Loading book...</div>';
+    $readerText.innerHTML = '<div class="load-state"><div class="spinner" style="margin:0 auto 16px;"></div>Loading book...<span class="load-progress"></span></div>';
     $sidebarName.textContent = displayName;
     $topbarBook.textContent = displayName;
     $crumbBook.textContent = displayName;
@@ -3264,6 +3376,31 @@
     $chapterNoResults.classList.remove('visible');
 
     var isEpub = /\.epub$/i.test(book.name);
+
+    function showChapter(chIdx, scroll, moreComing, anchor) {
+      renderChapterList(moreComing);
+      suppressPopState = true;
+      goToChapter(chIdx);
+      // Use replaceState for initial open so it doesn't create extra history
+      if (currentBook && !book._localText) {
+        updateUrl(currentBook, chIdx, true);
+      }
+      suppressPopState = false;
+
+      // Restore scroll position after content renders
+      if (typeof scroll === 'number' && scroll > 0) {
+        requestAnimationFrame(function () {
+          if (scrollToAnchor(anchor)) {
+            // Drawing the blocks around it can nudge it once more: settle again.
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () { scrollToAnchor(anchor); });
+            });
+          } else {
+            $readerContent.scrollTop = scroll;
+          }
+        });
+      }
+    }
 
     try {
       currentBook = book;
@@ -3279,47 +3416,62 @@
         chapters = await parseEpub(ab);
       } else {
         var text;
+        var want = typeof resumeChapter === 'number' ? resumeChapter : 0;
+        var early = null;  // chapters shown while the rest was still downloading
         if (book._localText) {
           text = cleanWatermark(normalizeText(book._localText));
         } else {
           text = await getCachedBookText(book.sha);
           if (text === null) {
-            var raw;
-            if (book._multipart) {
-              // All parts download in parallel, then join in name order.
-              var parts = book._parts || [];
-              if (!parts.length) throw new Error('Could not load book parts');
-              raw = (await Promise.all(parts.map(function (part) {
-                return fetchRepoFile(part).then(readResponseText, function () {
-                  throw new Error('Failed to load part ' + part.name);
-                });
-              }))).join('\n');
-            } else {
-              raw = await readResponseText(await fetchRepoFile(book));
-            }
-            text = cleanWatermark(normalizeText(raw));
+            // A big book is megabytes, but the chapter being opened is usually
+            // near the front: show it once it has fully arrived (the next
+            // chapter's heading is in), keep downloading the rest behind it.
+            var nextTry = 128 * 1024;
+            var $progress = $readerText.querySelector('.load-progress');
+            text = cleanWatermark(normalizeText(await downloadBookText(book, function (partial, frac) {
+              if (early || currentBook !== book) return;
+              if ($progress && frac) $progress.textContent = ' ' + Math.round(frac * 100) + '%';
+              if (partial.length < nextTry) return;
+              nextTry = partial.length * 1.5;  // re-parse at most a few times
+              parseChapters(cleanWatermark(normalizeText(partial.slice(0, partial.lastIndexOf('\n')))));
+              chapters.pop();  // the last chapter is still arriving
+              if (chapters.length > want) {
+                early = chapters;
+                showChapter(want, resumeScroll, true, resumeAnchor);
+              } else {
+                chapters = [];
+              }
+            })));
             putCachedBookText(book.sha, text);
           }
         }
+        if (currentBook !== book) return;  // the reader moved on while this downloaded
         parseChapters(text);
+        if (early) {
+          // Swap in the whole book without moving the reader: same chapter
+          // (matched by title if they have navigated), same scroll offset.
+          var at = currentChapterIndex, idx = at;
+          if (at !== want && early[at] && !(chapters[at] && chapters[at].title === early[at].title)) {
+            for (var k = 0; k < chapters.length; k++) {
+              if (chapters[k].title === early[at].title) { idx = k; break; }
+            }
+          }
+          idx = Math.min(idx, chapters.length - 1);
+          if (early[at] && chapters[idx].content === early[at].content) {
+            // The text on screen is already right: only the catalog and the
+            // "Chapter N of M" header change, so skip laying it out again.
+            renderChapterList();
+            showChapterHeader(idx);
+            updateBookmarkBtn();
+            if (idx !== at) updateUrl(currentBook, idx, true);
+            saveReadingPosition();
+          } else {
+            showChapter(idx, $readerContent.scrollTop);
+          }
+          return;
+        }
       }
-      renderChapterList();
-
-      var chIdx = (typeof resumeChapter === 'number' && resumeChapter < chapters.length) ? resumeChapter : 0;
-      suppressPopState = true;
-      goToChapter(chIdx);
-      // Use replaceState for initial open so it doesn't create extra history
-      if (currentBook && !book._localText) {
-        updateUrl(currentBook, chIdx, true);
-      }
-      suppressPopState = false;
-
-      // Restore scroll position after content renders
-      if (typeof resumeScroll === 'number' && resumeScroll > 0) {
-        requestAnimationFrame(function () {
-          $readerContent.scrollTop = resumeScroll;
-        });
-      }
+      showChapter(typeof resumeChapter === 'number' && resumeChapter < chapters.length ? resumeChapter : 0, resumeScroll, false, resumeAnchor);
     } catch (e) {
       $readerText.innerHTML = '<div class="load-state"><div class="error-msg">Failed to load book: ' + escapeHtml(e.message) + '</div></div>';
     }
@@ -3690,7 +3842,9 @@
   }
 
   // ============ Render chapter list ============
-  function renderChapterList() {
+  var moreChaptersComing = false;  // the book is shown before it has fully downloaded
+  function renderChapterList(moreComing) {
+    moreChaptersComing = !!moreComing;
     // One HTML string and one parse — books here run to thousands of chapters.
     var marked = bookmarkedSet();
     var html = '';
@@ -3703,6 +3857,7 @@
       html += '<div class="chapter-item' + (marked[i] ? ' bookmarked' : '') + '" data-idx="' + i + '">' +
         chapterItemInner(i, escapeHtml(chapters[i].title)) + '</div>';
     }
+    if (moreComing) html += '<div class="chapter-loading">Loading the rest of the book…</div>';
     $chapterList.innerHTML = html;
   }
 
@@ -3731,10 +3886,33 @@
     });
   }
 
-  function goToChapter(idx) {
-    if (idx < 0 || idx >= chapters.length) return;
+  // A few books parse into a handful of huge "chapters" — tens of thousands of
+  // paragraphs that took seconds to lay out in one go. Those are wrapped in
+  // blocks the browser skips until they near the viewport, each sized up front
+  // from its character count so the scrollbar and saved positions stay close.
+  var LONG_CHAPTER = 400, BLOCK_PARAS = 100;
+  function blockedHtml(parts, lens) {
+    var cs = getComputedStyle($readerText);
+    var fs = parseFloat(cs.fontSize) || 18;
+    var lh = parseFloat(cs.lineHeight) || fs * 1.95;
+    var perLine = Math.max(1, Math.floor(($readerText.clientWidth || 600) / (fs * 1.01)));
+    var html = '';
+    for (var i = 0; i < parts.length; i += BLOCK_PARAS) {
+      var end = Math.min(parts.length, i + BLOCK_PARAS), h = 0;
+      for (var j = i; j < end; j++) {
+        // CJK text is one em per character; +2 for the first-line indent.
+        h += lens[j] < 0 ? 300 : Math.ceil((lens[j] + 2) / perLine) * lh + 0.4 * fs;
+      }
+      html += '<div class="p-block" style="contain-intrinsic-size:auto ' + Math.round(h) + 'px">' +
+        parts.slice(i, end).join('') + '</div>';
+    }
+    return html;
+  }
+
+  // Catalog highlight and article header for chapter idx (not the body).
+  function showChapterHeader(idx) {
     currentChapterIndex = idx;
-    const ch = chapters[idx];
+    var ch = chapters[idx];
 
     // Highlight the catalog row — use data-idx to find it efficiently
     var prev = $chapterList.querySelector('.chapter-item.active');
@@ -3757,12 +3935,19 @@
     var minutes = Math.max(1, Math.round(charCount / 450));
     $articleDesc.innerHTML =
       (ch.volume ? '<span class="text">' + escapeHtml(ch.volume) + '</span>' : '') +
-      '<span class="text">Chapter ' + (idx + 1) + ' of ' + chapters.length + '</span>' +
+      '<span class="text">Chapter ' + (idx + 1) + ' of ' + chapters.length + (moreChaptersComing ? '+' : '') + '</span>' +
       '<span class="text">' + charCount.toLocaleString() + ' characters</span>' +
       '<span class="text">about ' + minutes + ' min read</span>';
+    updateNavState();
+  }
+
+  function goToChapter(idx) {
+    if (idx < 0 || idx >= chapters.length) return;
+    showChapterHeader(idx);
+    var body = chapters[idx].content || '';
 
     // ---- Body ----
-    var html = '';
+    var parts = [], lens = [];
     var paragraphs = body.split(/\n+/);
     paragraphs.forEach(function (p) {
       p = p.trim();
@@ -3771,14 +3956,14 @@
       // publisher's CDN. Render it instead of printing the tag as text.
       var img = p.match(/^<img\s[^>]*\bsrc\s*=\s*["'](https:\/\/[^"'<>\s]+)["'][^>]*>$/i);
       if (img) {
-        html += '<figure class="ch-illust"><img loading="lazy" alt="" src="' + escapeHtml(img[1]) + '"></figure>';
+        parts.push('<figure class="ch-illust"><img loading="lazy" alt="" src="' + escapeHtml(img[1]) + '"></figure>');
+        lens.push(-1);
         return;
       }
-      html += '<p>' + escapeHtml(p) + '</p>';
+      parts.push('<p>' + escapeHtml(p) + '</p>');
+      lens.push(p.length);
     });
-    $readerText.innerHTML = html;
-
-    updateNavState();
+    $readerText.innerHTML = parts.length > LONG_CHAPTER ? blockedHtml(parts, lens) : parts.join('');
 
     $readerContent.scrollTop = 0;
     $progressBar.style.width = '0%';
@@ -4136,7 +4321,7 @@
     if (match) {
       $resumeName.textContent = last.book.replace(/\.(txt|epub)$/i, '');
       $btnResume.classList.add('visible');
-      $btnResume.onclick = function () { openBook(match, last.chapter, last.scroll); };
+      $btnResume.onclick = function () { openBook(match, last.chapter, last.scroll, last.anchor); };
       $btnResume.onpointerenter = function () { warmBook(match); };
     } else {
       $btnResume.classList.remove('visible');
@@ -5241,7 +5426,8 @@
       localStorage.setItem('reader-last', JSON.stringify({
         book: currentBook.name,
         chapter: currentChapterIndex,
-        scroll: $readerContent.scrollTop
+        scroll: $readerContent.scrollTop,
+        anchor: scrollAnchor()
       }));
     }
   };
