@@ -2809,6 +2809,20 @@
     }).catch(function () {});
   }
 
+  // Covers are cached in localStorage under the EPUB's blob sha; drop the ones
+  // for files that were replaced or removed so they don't eat the quota.
+  function pruneCoverCache(liveShas) {
+    try {
+      var dead = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        var m = k && k.match(/^reader-cover-([0-9a-f]{40})$/);
+        if (m && !liveShas[m[1]]) dead.push(k);
+      }
+      dead.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+  }
+
   // Same-origin copy first (served by Pages' CDN on the connection we already
   // have); a file committed seconds ago may not be deployed yet, so fall back
   // to raw.githubusercontent.com.
@@ -3120,9 +3134,11 @@
           books = booksFromTree(info, fresh.branch, fresh.tree).concat(localBooks());
           renderBookGrid();
         }
-        pruneBookCache(liveShaSet(booksFromTree(info, fresh.branch, fresh.tree).reduce(function (acc, b) {
+        var liveShas = liveShaSet(booksFromTree(info, fresh.branch, fresh.tree).reduce(function (acc, b) {
           return acc.concat(b._parts || [], [b]);
-        }, [])));
+        }, []));
+        pruneBookCache(liveShas);
+        pruneCoverCache(liveShas);
         return changed;
       });
 
@@ -4269,6 +4285,34 @@
     return 'data:' + mime + ';base64,' + base64;
   }
 
+  // Cards show covers at most ~200 CSS px wide, so a 360 px thumbnail is
+  // sharp even on 3x phone screens. Full-size covers (up to ~165 KB of
+  // base64 each) would soon fill localStorage's ~5 MB, after which nothing
+  // is cached and every visit re-downloads whole EPUBs just for covers.
+  var COVER_THUMB_W = 360;
+  var COVER_THUMB_MAX_CHARS = 60000;
+
+  function shrinkCover(dataUrl) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          if (img.naturalWidth <= COVER_THUMB_W) return resolve(dataUrl);
+          var w = COVER_THUMB_W, h = Math.round(img.naturalHeight * w / img.naturalWidth);
+          var c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          var out = c.toDataURL('image/webp', 0.82);
+          // Browsers that can't encode WebP hand back PNG — use JPEG there.
+          if (out.indexOf('data:image/webp') !== 0) out = c.toDataURL('image/jpeg', 0.85);
+          resolve(out.length < dataUrl.length ? out : dataUrl);
+        } catch (e) { resolve(dataUrl); }
+      };
+      img.onerror = function () { resolve(dataUrl); };
+      img.src = dataUrl;
+    });
+  }
+
   async function loadEpubCover(book, card) {
     try {
       if (book._coverDataUrl) {
@@ -4283,6 +4327,14 @@
         if (cached) {
           book._coverDataUrl = cached;
           applyCoverToCard(card, cached);
+          // Covers cached before thumbnails existed are full-size: shrink once.
+          if (cached.length > COVER_THUMB_MAX_CHARS) {
+            shrinkCover(cached).then(function (small) {
+              if (small.length >= cached.length) return;
+              book._coverDataUrl = small;
+              try { localStorage.setItem(cacheKey, small); } catch (e) {}
+            });
+          }
           return;
         }
       }
@@ -4300,6 +4352,7 @@
 
       var dataUrl = await extractEpubCoverDataUrl(ab);
       if (!dataUrl) return;
+      dataUrl = await shrinkCover(dataUrl);
 
       book._coverDataUrl = dataUrl;
       applyCoverToCard(card, dataUrl);
@@ -5327,6 +5380,13 @@
     // The link tabs' files are tiny: fetch them once the page has settled.
     var idle = window.requestIdleCallback || function (fn) { setTimeout(fn, 1200); };
     idle(prefetchListFiles, { timeout: 4000 });
+    // sw.js answers chapter links from a cached copy of this page, skipping
+    // the 404.html bounce and the network round trip on later visits.
+    if (info && 'serviceWorker' in navigator) {
+      idle(function () {
+        navigator.serviceWorker.register(basePath + 'sw.js', { scope: basePath }).catch(function () {});
+      }, { timeout: 6000 });
+    }
   });
 })();
 </script>
