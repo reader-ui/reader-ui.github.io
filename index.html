@@ -989,9 +989,15 @@
     padding: 6px 0 20px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+    /* Thousands of rows: while the drawer sits off-screen the browser skips
+       laying them out at all, and once open only the rows in view are laid out. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
   }
 
   .chapter-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 44px;
     padding: 11px 20px 11px 22px;
     cursor: pointer;
     font-size: 14px;
@@ -2003,9 +2009,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- The CJK webfonts are megabytes and the system fallbacks read fine, so they
-     must never hold up first paint: fetch as print-only, then switch on. -->
-<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Serif+SC:wght@400;600;700&display=swap"></noscript>
+     must never hold up first paint: fetch as print-only, then switch on.
+     Only the serif reading face is fetched — every registered CJK face slows
+     each layout, and UI text already has PingFang / YaHei on the system. -->
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap"></noscript>
 <!-- JSZip is only needed for EPUBs; ensureJSZip() loads it on demand. -->
 </head>
 <body>
@@ -2801,12 +2809,47 @@
   // Same-origin copy first (served by Pages' CDN on the connection we already
   // have); a file committed seconds ago may not be deployed yet, so fall back
   // to raw.githubusercontent.com.
+  // Downloads started ahead of openBook (deep link in loadBooks, hover in
+  // warmBook): url -> Promise<Response|null>
+  var prefetched = {};
+
+  var prefetchAborts = {};
+
+  // Start fetching a book the reader is about to open, unless its text is
+  // already cached (checked without reading the body).
+  function warmBook(book) {
+    var url = book && book.download_url;
+    if (!url || book._multipart || prefetched[url] || book._file || !window.AbortController) return;
+    var ctl = new AbortController();
+    prefetchAborts[url] = ctl;
+    var cached = (book.sha && window.caches)
+      ? caches.open(BOOK_CACHE).then(function (c) { return c.match(bookCacheKey(book.sha)); }).catch(function () { return null; })
+      : Promise.resolve(null);
+    prefetched[url] = cached.then(function (hit) {
+      if (hit || ctl.signal.aborted) return null;  // null makes fetchRepoFile fetch normally
+      return fetch(url, { signal: ctl.signal }).catch(function () { return null; });
+    });
+  }
+
+  // The pointer left without opening the book: cancel the download. Opening
+  // hides the shelf, which itself fires pointerleave while openBook is still
+  // checking the cache — so the book being opened is never cancelled.
+  function coolBook(book) {
+    var url = book && book.download_url;
+    if (!url || !prefetched[url] || book === currentBook) return;
+    delete prefetched[url];
+    if (prefetchAborts[url]) prefetchAborts[url].abort();
+    delete prefetchAborts[url];
+  }
+
   async function fetchRepoFile(file) {
     var urls = [file.download_url, file._rawUrl].filter(Boolean);
     var lastErr = null;
     for (var i = 0; i < urls.length; i++) {
       try {
-        var res = await fetch(urls[i]);
+        var early = prefetched[urls[i]];
+        delete prefetched[urls[i]];  // a body can only be read once
+        var res = (early && await early) || await fetch(urls[i]);
         if (res.ok) return res;
         lastErr = new Error('HTTP ' + res.status);
       } catch (e) { lastErr = e; }
@@ -3042,6 +3085,16 @@
       if (cached && (cached.owner !== info.owner || cached.repo !== info.repo || !Array.isArray(cached.tree))) cached = null;
 
       var freshPromise = fetchBookTree(info);
+
+      // First visit through a book's link: its file path is right there in the
+      // URL, so start the (multi-MB) download now rather than after the list
+      // call returns. An EPUB or multi-part book just costs one quick 404.
+      var route = parseUrlRoute();
+      if (route && !cached) {
+        var guess = basePath + encodePath('books/' + (route.category ? route.category + '/' : '') + route.bookSlug + '.txt');
+        prefetched[guess] = fetch(guess).catch(function () { return null; });
+      }
+
       var idx = cached || await freshPromise;
       if (!idx) {
         $loading.style.display = 'none';
@@ -3069,7 +3122,6 @@
 
       // Priority 1: URL route. A deep link to a book added since the cached
       // list was saved only resolves once the fresh list is in.
-      var route = parseUrlRoute();
       if (route) {
         var routeMatch = findBookByRoute(route);
         if (!routeMatch && cached && await freshApplied) routeMatch = findBookByRoute(route);
@@ -3639,7 +3691,9 @@
     var cur = $chapterList.querySelector('.chapter-item[data-idx="' + idx + '"]');
     if (cur) {
       cur.classList.add('active');
-      cur.scrollIntoView({ block: 'nearest' });
+      // Scrolling a closed drawer would force a layout of the whole catalog;
+      // openSidebar brings the active row into view instead.
+      if ($sidebar.classList.contains('open')) cur.scrollIntoView({ block: 'nearest' });
     }
 
     // ---- Article header ----
@@ -3870,6 +3924,20 @@
       }
     });
 
+    // A hover or touch comes a few hundred ms before the click — start the
+    // download then. Only once the pointer rests on the card, so sweeping
+    // across the shelf (or touch-scrolling it, which cancels the pointer)
+    // doesn't fire a multi-MB download per card; leaving drops an unclaimed one.
+    var warmTimer = 0;
+    card.addEventListener('pointerenter', function () {
+      clearTimeout(warmTimer);
+      warmTimer = setTimeout(function () { warmBook(book); }, 120);
+    });
+    card.addEventListener('pointerleave', function () {
+      clearTimeout(warmTimer);
+      coolBook(book);
+    });
+
     // Only EPUBs carry an embedded cover image — TXT cards keep the plain icon + "TXT" badge.
     if (isEpub) queueCoverLoad(book, card);
 
@@ -4018,9 +4086,11 @@
       $resumeName.textContent = last.book.replace(/\.(txt|epub)$/i, '');
       $btnResume.classList.add('visible');
       $btnResume.onclick = function () { openBook(match, last.chapter, last.scroll); };
+      $btnResume.onpointerenter = function () { warmBook(match); };
     } else {
       $btnResume.classList.remove('visible');
       $btnResume.onclick = null;
+      $btnResume.onpointerenter = null;
     }
   }
 
@@ -4628,6 +4698,8 @@
     closeAllPanels();
     $sidebar.classList.add('open');
     $overlay.classList.add('active');
+    var cur = $chapterList.querySelector('.chapter-item.active');
+    if (cur) cur.scrollIntoView({ block: 'center' });
   }
 
   function toggleBookmarksPanel() {
