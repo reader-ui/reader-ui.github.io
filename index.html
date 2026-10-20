@@ -2008,6 +2008,9 @@
 <link rel="preconnect" href="https://api.github.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Link tabs: list files come from raw.githubusercontent.com, favicons from DuckDuckGo. -->
+<link rel="dns-prefetch" href="https://raw.githubusercontent.com">
+<link rel="dns-prefetch" href="https://icons.duckduckgo.com">
 <!-- The CJK webfonts are megabytes and the system fallbacks read fine, so they
      must never hold up first paint: fetch as print-only, then switch on.
      Only the serif reading face is fetched — every registered CJK face slows
@@ -2987,6 +2990,7 @@
   // kept in localStorage, so a repeat visit paints the shelf — and resumes the
   // open book — before the network answers; the fresh tree then replaces it.
   var INDEX_CACHE_KEY = 'reader-index-v1';
+  var repoBranch = null;  // branch the book list came from (main / master)
   // Folders that hold one book split into parts, not a category of books
   var MULTIPART_BOOKS = ['重生龙骑士', '当成为小姐姐之后'];
 
@@ -3102,6 +3106,7 @@
         return;
       }
 
+      repoBranch = idx.branch;
       books = booksFromTree(info, idx.branch, idx.tree).concat(localBooks());
       renderBookGrid();
 
@@ -3109,6 +3114,7 @@
       var freshApplied = freshPromise.then(function (fresh) {
         if (!fresh) return false;
         var changed = !cached || JSON.stringify(fresh.tree) !== JSON.stringify(cached.tree) || fresh.branch !== cached.branch;
+        repoBranch = fresh.branch;
         if (changed) saveIndex(fresh);
         if (cached && changed) {
           books = booksFromTree(info, fresh.branch, fresh.tree).concat(localBooks());
@@ -3541,6 +3547,18 @@
         var eyVol = eyM[1] || (eyVolN ? '第' + (eyVolNames.charAt(eyVolN - 1) || eyVolN) + '卷' : undefined);
         splits.push({ index: eyM.index, title: eyT, volume: eyVol });
       }
+    } else if (currentBook && currentBook.name.indexOf('玄幻，我能无限顿悟') >= 0) {
+      // Each chapter opens flush left as "第12章 Title", then repeats itself
+      // indented in Chinese numerals ("　　第十二章 Title"). Only the flush-left
+      // line is a heading; the indented copy is an echo to drop from the body.
+      splits = collectMatches(text, /^(第[0-9]+章[^\n]*)/gm);
+      splits.forEach(function (s) {
+        var name = s.title.replace(/^第[0-9]+章\s*/, '');
+        s.echo = function (line) {
+          var m = line.match(/^第[零一二三四五六七八九十百千万]+章\s*([\s\S]*)$/);
+          return !!m && m[1] === name;
+        };
+      });
     } else if (currentBook && currentBook.name.indexOf('因为怕痛就把攻击全闪避了') >= 0) {
       // Book uses "N~Title" for real chapters, but in-story game/system text
       // also contains "第X章"-style phrases, which would make Strategy 1 match
@@ -3630,8 +3648,10 @@
       var nlIdx = raw.indexOf('\n');
       var body = nlIdx >= 0 ? raw.slice(nlIdx + 1).trim() : '';
       // Some scrapes repeat the heading as the first body line — drop the echo.
+      // A book branch can supply its own echo test for copies that differ in form.
       var bodyNl = body.indexOf('\n');
-      if ((bodyNl >= 0 ? body.slice(0, bodyNl) : body).trim() === splits[i].title) {
+      var firstLine = (bodyNl >= 0 ? body.slice(0, bodyNl) : body).trim();
+      if (firstLine === splits[i].title || (splits[i].echo && splits[i].echo(firstLine))) {
         body = bodyNl >= 0 ? body.slice(bodyNl + 1).trim() : '';
       }
       chapters.push({ title: splits[i].title, content: body, volume: splits[i].volume });
@@ -4325,29 +4345,73 @@
   // ============ Links tab ============
   var $linksList = document.getElementById('links-list');
 
+  // ============ Link list files (urls.txt / sf.txt) ============
+  // Both tabs read a small text file from the repo root. The last copy is
+  // kept in localStorage so a tab paints at once, and both files are fetched
+  // in idle time after startup — the tabs open with nothing to wait for and
+  // the nav counts are filled in before anyone clicks.
+  var LIST_CACHE_PREFIX = 'reader-list-';
+  var listFetches = {};
+
+  function readCachedList(name) {
+    try { return localStorage.getItem(LIST_CACHE_PREFIX + name); } catch (e) { return null; }
+  }
+
+  // One network fetch per file per page load. raw.githubusercontent.com is
+  // asked first since it sees an edit before Pages redeploys; the same-origin
+  // copy goes out in parallel as the fallback (and serves local testing).
+  function fetchListFile(name) {
+    if (!listFetches[name]) {
+      listFetches[name] = (async function () {
+        var urls = [];
+        var info = getRepoInfo();
+        if (info) urls.push('https://raw.githubusercontent.com/' + info.owner + '/' + info.repo + '/' + (repoBranch || 'main') + '/' + name);
+        urls.push(basePath + name);
+        var pending = urls.map(function (u) {
+          return fetch(u, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; });
+        });
+        for (var i = 0; i < pending.length; i++) {
+          var text = await pending[i];
+          if (text !== null) {
+            text = normalizeText(text);
+            try { localStorage.setItem(LIST_CACHE_PREFIX + name, text); } catch (e) {}
+            return text;
+          }
+        }
+        return null;
+      })();
+    }
+    return listFetches[name];
+  }
+
+  // Paint from the saved copy, then again only if the fresh file differs.
+  async function loadListTab(name, render) {
+    var cached = readCachedList(name);
+    if (cached !== null) render(cached);
+    var fresh = await fetchListFile(name);
+    if (fresh !== null ? fresh !== cached : cached === null) render(fresh);
+  }
+
+  function countListItems(text) {
+    if (!text) return 0;
+    return text.split('\n').filter(function (l) { l = l.trim(); return l && l.charAt(0) !== '#'; }).length;
+  }
+
+  function showListCounts() {
+    var u = readCachedList('urls.txt'), s = readCachedList('sf.txt');
+    if (u !== null) $navLinkCount.textContent = countListItems(u);
+    if (s !== null) $navSfCount.textContent = countListItems(s);
+  }
+
+  function prefetchListFiles() {
+    Promise.all([fetchListFile('urls.txt'), fetchListFile('sf.txt')]).then(showListCounts);
+  }
+
   async function loadLinks() {
-    // Try fetching urls.txt via GitHub API, then raw, then relative path
-    var text = null;
-    var info = getRepoInfo();
+    await loadListTab('urls.txt', renderLinks);
+  }
 
-    if (info) {
-      // GitHub Pages — try raw file from repo
-      for (var branch of ['main', 'master']) {
-        try {
-          var res = await fetch('https://raw.githubusercontent.com/' + info.owner + '/' + info.repo + '/' + branch + '/urls.txt');
-          if (res.ok) { text = await res.text(); break; }
-        } catch (e) {}
-      }
-    }
-
-    // Fallback — try relative path (works with local server)
-    if (text === null) {
-      try {
-        var res2 = await fetch('urls.txt');
-        if (res2.ok) text = await res2.text();
-      } catch (e) {}
-    }
-
+  function renderLinks(text) {
     if (text === null || text.trim() === '') {
       $linksList.innerHTML =
         '<div class="links-empty">还没有链接。<br>在仓库根目录建立 <code>urls.txt</code>，每行一条：' +
@@ -4357,7 +4421,6 @@
       return;
     }
 
-    text = normalizeText(text);
     var lines = text.split('\n');
 
     // Lines are grouped by "# heading" markers; everything before the first
@@ -4440,6 +4503,8 @@
     // Favicon layers over the generated letter tile; if it never loads the
     // letter simply stays visible.
     var img = a.querySelector('.link-favicon img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
     img.addEventListener('load', function () { if (img.naturalWidth > 1) img.classList.add('loaded'); });
     img.src = 'https://icons.duckduckgo.com/ip3/' + encodeURIComponent(host) + '.ico';
 
@@ -4453,25 +4518,10 @@
   var $sfList = document.getElementById('sf-list');
 
   async function loadSfBooks() {
-    var text = null;
-    var info = getRepoInfo();
+    await loadListTab('sf.txt', renderSfBooks);
+  }
 
-    if (info) {
-      for (var branch of ['main', 'master']) {
-        try {
-          var res = await fetch('https://raw.githubusercontent.com/' + info.owner + '/' + info.repo + '/' + branch + '/sf.txt');
-          if (res.ok) { text = await res.text(); break; }
-        } catch (e) {}
-      }
-    }
-
-    if (text === null) {
-      try {
-        var res2 = await fetch('sf.txt');
-        if (res2.ok) text = await res2.text();
-      } catch (e) {}
-    }
-
+  function renderSfBooks(text) {
     if (text === null || text.trim() === '') {
       $sfList.innerHTML =
         '<div class="links-empty">还没有 SF 链接。<br>在仓库根目录建立 <code>sf.txt</code>，每行一条：' +
@@ -4480,7 +4530,6 @@
       return;
     }
 
-    text = normalizeText(text);
     var lines = text.split('\n');
     var items = [];
     lines.forEach(function (raw) {
@@ -4505,6 +4554,7 @@
       return;
     }
 
+    if (sfFrameObserver) sfFrameObserver.disconnect();  // blocks from an earlier render
     var frag = document.createDocumentFragment();
     items.forEach(function (item) { frag.appendChild(makeSfBrowserBlock(item)); });
     $sfList.innerHTML = '';
@@ -4549,6 +4599,26 @@
       return wrap;
     }
 
+    // Each frame is a whole website: build it only when its block comes near
+    // the viewport, and only then start the blocked-frame clock.
+    frameHolder._startFrame = function () { startSfFrame(frameHolder, item, url); };
+    if (sfFrameObserver) sfFrameObserver.observe(frameHolder);
+    else frameHolder._startFrame();
+
+    return wrap;
+  }
+
+  var sfFrameObserver = ('IntersectionObserver' in window) ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      sfFrameObserver.unobserve(en.target);
+      var start = en.target._startFrame;
+      en.target._startFrame = null;
+      if (start) start();
+    });
+  }, { rootMargin: '200px 0px' }) : null;
+
+  function startSfFrame(frameHolder, item, url) {
     var settled = false;
     var fallbackTimer = setTimeout(function () {
       if (settled) return;
@@ -4573,8 +4643,6 @@
     });
     iframe.src = url;
     frameHolder.appendChild(iframe);
-
-    return wrap;
   }
 
   // ============ Reading settings (typeface, line height) ============
@@ -5254,7 +5322,12 @@
   };
 
   // ============ Init ============
-  loadBooks();
+  showListCounts();
+  loadBooks().then(function () {
+    // The link tabs' files are tiny: fetch them once the page has settled.
+    var idle = window.requestIdleCallback || function (fn) { setTimeout(fn, 1200); };
+    idle(prefetchListFiles, { timeout: 4000 });
+  });
 })();
 </script>
 </body>
