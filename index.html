@@ -2177,19 +2177,19 @@
     <nav class="site-nav">
       <button class="nav-a active" data-tab="books">
         <span class="icn">&#128218;</span>
-        <span class="text">&#20070;&#24211;<i class="count" id="nav-book-count">0</i></span>
+        <span class="text">Library<i class="count" id="nav-book-count">0</i></span>
       </button>
       <button class="nav-a" data-tab="links">
         <span class="icn">&#128279;</span>
-        <span class="text">&#38142;&#25509;<i class="count" id="nav-link-count">&middot;</i></span>
+        <span class="text">Links<i class="count" id="nav-link-count">&middot;</i></span>
       </button>
       <button class="nav-a" data-tab="sf">
         <span class="icn">&#128640;</span>
-        <span class="text">SF&#20070;&#24211;<i class="count" id="nav-sf-count">&middot;</i></span>
+        <span class="text">SF Books<i class="count" id="nav-sf-count">&middot;</i></span>
       </button>
       <button class="nav-a" data-tab="bili">
         <span class="icn">&#128250;</span>
-        <span class="text">B&#31449;<i class="count" id="nav-bili-count">&middot;</i></span>
+        <span class="text">Video<i class="count" id="nav-bili-count">&middot;</i></span>
       </button>
     </nav>
 
@@ -2251,7 +2251,7 @@
 
       <div class="tab-panel" id="tab-bili">
         <form class="book-search" id="bili-form" autocomplete="off">
-          <input type="text" class="book-search-input" id="bili-input" placeholder="搜索 UP主名字，或粘贴视频 / 直播间链接、BV号直接播放" enterkeyhint="search">
+          <input type="text" class="book-search-input" id="bili-input" placeholder="Paste a video URL to play it here (Bilibili, YouTube, Vimeo, TikTok…)" enterkeyhint="go">
           <button type="button" class="book-search-clear" id="bili-clear">&times;</button>
           <span class="book-search-icon">&#128269;</span>
         </form>
@@ -5525,7 +5525,7 @@
     $biliList.innerHTML = '';
     if (!total) {
       $biliList.innerHTML =
-        '<div class="links-empty">在上方搜索 UP主，或粘贴视频链接直接播放。<br>' +
+        '<div class="links-empty">在上方粘贴视频链接，视频就在这里播放（输入名字则搜索 B站 UP主）。<br>' +
         '想固定一份片单：在仓库根目录建立 <code>bili.txt</code>，每行一个视频：' +
         '<br><br><code># UP主名</code><br><code>BV1xx411c7mD,视频标题</code></div>';
       return;
