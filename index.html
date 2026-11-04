@@ -820,7 +820,15 @@
     background: #000;
   }
 
-  .bili-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .bili-player iframe,
+  .bili-player video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  /* TikTok's player is portrait. */
+  .bili-player.vertical { aspect-ratio: 9 / 16; max-width: 420px; max-height: none; margin: 0 auto; }
+
+  .bili-status { margin: 10px 4px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .bili-status[hidden] { display: none; }
+  .bili-status.error { color: #c0392b; }
 
   .bili-close {
     flex-shrink: 0;
@@ -2243,7 +2251,7 @@
 
       <div class="tab-panel" id="tab-bili">
         <form class="book-search" id="bili-form" autocomplete="off">
-          <input type="text" class="book-search-input" id="bili-input" placeholder="搜索 UP主名字，或粘贴视频链接 / BV号 / UP主空间链接 / UID" enterkeyhint="search">
+          <input type="text" class="book-search-input" id="bili-input" placeholder="搜索 UP主名字，或粘贴视频 / 直播间链接、BV号直接播放" enterkeyhint="search">
           <button type="button" class="book-search-clear" id="bili-clear">&times;</button>
           <span class="book-search-icon">&#128269;</span>
         </form>
@@ -2251,6 +2259,7 @@
           <button type="button" class="category-chip active" data-mode="upuser">搜 UP主</button>
           <button type="button" class="category-chip" data-mode="video">搜视频</button>
         </div>
+        <p class="bili-status" id="bili-status" role="status" hidden></p>
 
         <div class="bili-player-wrap sf-browser" id="bili-player-wrap" hidden>
           <div class="sf-browser-bar">
@@ -4894,7 +4903,7 @@
     var u = readCachedList('urls.txt'), s = readCachedList('sf.txt'), b = readCachedList('bili.txt');
     if (u !== null) $navLinkCount.textContent = countListItems(u);
     if (s !== null) $navSfCount.textContent = countListItems(s);
-    if (b !== null) $navBiliCount.textContent = countListItems(b.split('\n').filter(function (l) { return parseBiliVideo(l); }).join('\n'));
+    if (b !== null) $navBiliCount.textContent = parseBiliList(b).reduce(function (n, g) { return n + g.items.length; }, 0);
   }
 
   function prefetchListFiles() {
@@ -5166,6 +5175,7 @@
   var $biliHistory = document.getElementById('bili-history');
   var $biliList = document.getElementById('bili-list');
   var $navBiliCount = document.getElementById('nav-bili-count');
+  var $biliStatus = document.getElementById('bili-status');
 
   var biliMode = 'upuser';
   var biliKeyword = '';
@@ -5179,44 +5189,166 @@
     try { localStorage.setItem('reader-bili-' + key, JSON.stringify(list)); } catch (e) {}
   }
 
-  // A video reference from a pasted link, BV id or av number:
-  // { bvid | aid, p, key } — or null when the text is not one.
-  function parseBiliVideo(text) {
-    var s = String(text || '').trim();
-    if (!s) return null;
-    var p = 1;
-    var pm = s.match(/[?&]p=(\d+)/);
-    if (pm) p = parseInt(pm[1], 10) || 1;
-    var bv = s.match(/\b(BV[0-9A-Za-z]{10})\b/);
-    if (bv) return { bvid: bv[1], p: p, key: bv[1] + (p > 1 ? '?p=' + p : '') };
-    var av = s.match(/(?:^|\/|\b)av(\d+)\b/i);
-    if (av) return { aid: av[1], p: p, key: 'av' + av[1] + (p > 1 ? '?p=' + p : '') };
-    return null;
+  // ---- Playback sources (after download.py's playback.mjs, MIT) ----
+  // A pasted link maps to the platform's own embed player, which handles its
+  // own access rules — no account, no download. Browser-side downloading of
+  // Bilibili/YouTube media stays blocked by CORS (download.py's own tests say
+  // so), so this tab only plays.
+  //
+  // biliSource(text) returns { kind: 'iframe' | 'media', src, page, key,
+  // platform, vertical } for a playable link, null when the text is not a
+  // link at all (the box then searches), and throws a readable Error for a
+  // link it recognises but cannot play.
+  var BILI_HOSTS = { 'bilibili.com': 1, 'www.bilibili.com': 1, 'm.bilibili.com': 1 };
+  var YT_HOSTS = { 'youtube.com': 1, 'www.youtube.com': 1, 'm.youtube.com': 1, 'music.youtube.com': 1, 'youtube-nocookie.com': 1, 'www.youtube-nocookie.com': 1 };
+  var VIMEO_HOSTS = { 'vimeo.com': 1, 'www.vimeo.com': 1, 'player.vimeo.com': 1 };
+  var TIKTOK_HOSTS = { 'tiktok.com': 1, 'www.tiktok.com': 1, 'm.tiktok.com': 1 };
+
+  // "90", "1:30", "1m30s" → seconds (0 when absent or malformed).
+  function biliSeconds(value) {
+    if (!value) return 0;
+    if (/^\d+$/.test(value)) return Math.min(Number(value), 8640000);
+    if (/^\d+(?::\d+){1,2}$/.test(value)) {
+      var parts = value.split(':').map(Number);
+      if (parts.slice(1).some(function (n) { return n > 59; })) return 0;
+      return Math.min(parts.reduce(function (t, n) { return t * 60 + n; }, 0), 8640000);
+    }
+    var m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(value);
+    return m ? Math.min(Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0), 8640000) : 0;
   }
 
-  function biliVideoPageUrl(v) {
-    return 'https://www.bilibili.com/video/' + (v.bvid || 'av' + v.aid) + '/' + (v.p > 1 ? '?p=' + v.p : '');
+  function biliSource(text) {
+    var s = String(text || '').trim();
+    if (!s) return null;
+    // Bare ids are the quickest thing to paste: BV1xx411c7mD, av170001, ?p=2 allowed.
+    var bare = /^(BV[0-9A-Za-z]{10}|av\d+)(\?.*)?$/i.exec(s);
+    if (bare) s = 'https://www.bilibili.com/video/' + (bare[1].charAt(0) === 'B' ? bare[1] : bare[1].toLowerCase()) + '/' + (bare[2] || '');
+    else if (/^(?:[\w-]+\.)*(?:bilibili\.com|b23\.tv|youtube\.com|youtu\.be|vimeo\.com|tiktok\.com)\//i.test(s)) s = 'https://' + s;
+    if (!/^https?:\/\//i.test(s)) return null;
+    var url;
+    try { url = new URL(s); } catch (e) { return null; }
+    if (url.username || url.password) throw new Error('请粘贴不含账号密码的公开链接。');
+    var host = url.hostname.toLowerCase();
+    var q = url.searchParams;
+    var target, m;
+
+    if (BILI_HOSTS[host]) {
+      m = /^\/video\/(BV[A-Za-z0-9]{10}|av\d+)\/?$/i.exec(url.pathname);
+      if (!m) throw new Error('请粘贴完整的 B站视频链接（bilibili.com/video/BV… 或 /video/av…）。');
+      var id = /^bv/i.test(m[1]) ? 'BV' + m[1].slice(2) : m[1].toLowerCase();
+      var part = q.get('p') || '1';
+      if (!/^[1-9]\d{0,5}$/.test(part)) throw new Error('B站分P编号必须是正整数。');
+      var t = biliSeconds(q.get('t'));
+      target = new URL('https://player.bilibili.com/player.html');
+      target.searchParams.set(id.charAt(0) === 'B' ? 'bvid' : 'aid', id.charAt(0) === 'B' ? id : id.slice(2));
+      target.searchParams.set('p', part);
+      target.searchParams.set('autoplay', '1');
+      target.searchParams.set('high_quality', '1');
+      target.searchParams.set('danmaku', '0');
+      if (t) target.searchParams.set('t', String(t));
+      var key = id + (part !== '1' ? '?p=' + part : '');
+      return { kind: 'iframe', platform: 'Bilibili', src: target.href, key: key,
+        page: 'https://www.bilibili.com/video/' + id + '/' + (part !== '1' ? '?p=' + part : '') };
+    }
+    if (host === 'live.bilibili.com') {
+      m = /^\/(?:blanc\/)?([1-9]\d*)\/?$/.exec(url.pathname);
+      if (!m) throw new Error('请粘贴带房间号的 B站直播间链接（live.bilibili.com/房间号）。');
+      target = new URL('https://www.bilibili.com/blackboard/live/live-activity-player.html');
+      target.search = new URLSearchParams({ cid: m[1], quality: '0', danmaku: '0', send: '0', sendpanel: '0' }).toString();
+      return { kind: 'iframe', platform: 'B站直播', src: target.href, key: 'live' + m[1], page: 'https://live.bilibili.com/' + m[1] };
+    }
+    if (host === 'b23.tv') throw new Error('b23.tv 短链接需要先在浏览器打开，再复制完整的 bilibili.com 视频链接粘贴到这里。');
+    if (YT_HOSTS[host] || host === 'youtu.be') {
+      var yid = host === 'youtu.be' ? url.pathname.split('/')[1] : q.get('v') || ((/\/(?:shorts|live|embed|v)\/([^/?]+)/.exec(url.pathname) || [])[1]);
+      if (!/^[A-Za-z0-9_-]{11}$/.test(yid || '')) throw new Error('请粘贴含视频 ID 的 YouTube 视频 / Shorts / 直播链接。');
+      target = new URL('https://www.youtube-nocookie.com/embed/' + yid);
+      target.search = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0' }).toString();
+      var ys = biliSeconds(q.get('t') || q.get('start'));
+      if (ys) target.searchParams.set('start', String(ys));
+      return { kind: 'iframe', platform: 'YouTube', src: target.href, key: 'yt:' + yid, page: 'https://www.youtube.com/watch?v=' + yid };
+    }
+    if (TIKTOK_HOSTS[host]) {
+      m = /^\/(?:@[^/]+\/video\/|player\/v1\/|embed\/v2\/|v\/)(\d{10,25})(?:[/?]|$)/.exec(url.pathname);
+      if (!m) throw new Error('请粘贴含 /video/ID 的 TikTok 链接。');
+      target = new URL('https://www.tiktok.com/player/v1/' + m[1]);
+      target.search = new URLSearchParams({ autoplay: '1', controls: '1', description: '1', music_info: '1' }).toString();
+      return { kind: 'iframe', platform: 'TikTok', src: target.href, key: 'tt:' + m[1], page: url.href, vertical: true };
+    }
+    if (host === 'vm.tiktok.com' || host === 'vt.tiktok.com') throw new Error('TikTok 短链接需要先打开，再粘贴完整的 /@用户/video/ID 链接。');
+    if (VIMEO_HOSTS[host]) {
+      var vm = url.pathname.match(/\d{6,}(?=\/|$)/g);
+      var vid = vm && vm[vm.length - 1];
+      if (!vid) throw new Error('请粘贴含数字视频 ID 的 Vimeo 链接。');
+      target = new URL('https://player.vimeo.com/video/' + vid);
+      var h = q.get('h');
+      if (h && /^[A-Za-z0-9]+$/.test(h)) target.searchParams.set('h', h);
+      target.searchParams.set('dnt', '1');
+      target.searchParams.set('autoplay', '1');
+      target.searchParams.set('playsinline', '1');
+      return { kind: 'iframe', platform: 'Vimeo', src: target.href, key: 'vimeo:' + vid, page: url.href };
+    }
+    if (/\.(mp4|m4v|webm|mov|mp3|m4a|ogg|ogv|wav|m3u8)$/i.test(url.pathname)) {
+      return { kind: 'media', platform: '媒体文件', src: url.href, key: url.href, page: url.href, hls: /\.m3u8$/i.test(url.pathname) };
+    }
+    throw new Error('这个链接不能在本页播放。支持 B站视频 / 直播间、YouTube、Vimeo、TikTok 和直链媒体文件。');
+  }
+
+  // For lists and paste: a playable source or null, never an exception.
+  function tryBiliSource(text) {
+    try { return biliSource(text); } catch (e) { return null; }
+  }
+
+  function setBiliStatus(msg, isError) {
+    $biliStatus.textContent = msg || '';
+    $biliStatus.classList.toggle('error', !!isError);
+    $biliStatus.hidden = !msg;
+  }
+
+  function stopBiliPlayer() {
+    var active = $biliPlayer.firstChild;
+    if (active && active.tagName === 'VIDEO') { active.pause(); active.removeAttribute('src'); active.load(); }
+    if (active && active.tagName === 'IFRAME') active.removeAttribute('src');
+    $biliPlayer.classList.remove('vertical');
+    $biliPlayer.innerHTML = '';
   }
 
   function playBili(v, title) {
-    var src = 'https://player.bilibili.com/player.html?' +
-      (v.bvid ? 'bvid=' + v.bvid : 'aid=' + v.aid) +
-      '&p=' + (v.p || 1) + '&autoplay=1&high_quality=1&danmaku=0';
-    var iframe = document.createElement('iframe');
-    iframe.setAttribute('allowfullscreen', 'true');
-    iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
-    iframe.setAttribute('scrolling', 'no');
-    iframe.src = src;
-    $biliPlayer.innerHTML = '';
-    $biliPlayer.appendChild(iframe);
-    $biliPlayerTitle.textContent = title || v.key;
-    $biliPlayerOpen.href = biliVideoPageUrl(v);
+    if (v.kind === 'media' && v.hls && !document.createElement('video').canPlayType('application/vnd.apple.mpegurl')) {
+      setBiliStatus('这个浏览器不能直接播放 HLS (.m3u8)。', true);
+      return;
+    }
+    stopBiliPlayer();
+    var el;
+    if (v.kind === 'media') {
+      el = document.createElement('video');
+      el.controls = true;
+      el.playsInline = true;
+      el.preload = 'metadata';
+      el.addEventListener('error', function () {
+        if ($biliPlayer.firstChild === el) setBiliStatus('播放失败：这个文件或编码在当前浏览器不可用。', true);
+      });
+      el.src = v.src;
+      el.play().catch(function () {});
+    } else {
+      el = document.createElement('iframe');
+      el.title = v.platform + ' player';
+      el.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
+      el.allowFullscreen = true;
+      el.referrerPolicy = 'strict-origin-when-cross-origin';
+      el.setAttribute('scrolling', 'no');
+      el.src = v.src;
+    }
+    $biliPlayer.classList.toggle('vertical', !!v.vertical);
+    $biliPlayer.appendChild(el);
+    $biliPlayerTitle.textContent = (title || v.key.replace(/^(?:yt|tt|vimeo):|^live/, '')) + (v.platform !== 'Bilibili' ? ' · ' + v.platform : '');
+    $biliPlayerOpen.href = v.page;
     $biliPlayerWrap.hidden = false;
+    setBiliStatus(v.kind === 'iframe' ? '已打开 ' + v.platform + ' 官方播放器，无需登录；没有自动播放就点一下播放器。' : '');
     biliPlayingKey = v.key;
     markBiliPlaying();
 
     var hist = readBiliStore('history').filter(function (h) { return h.key !== v.key; });
-    hist.unshift({ key: v.key, bvid: v.bvid, aid: v.aid, p: v.p, title: title || '' });
+    hist.unshift({ kind: v.kind, platform: v.platform, src: v.src, page: v.page, key: v.key, vertical: v.vertical, hls: v.hls, title: title || '' });
     writeBiliStore('history', hist.slice(0, 12));
     renderBiliHistory();
 
@@ -5224,8 +5356,9 @@
   }
 
   function closeBiliPlayer() {
-    $biliPlayer.innerHTML = '';  // drops the frame, which stops playback
+    stopBiliPlayer();
     $biliPlayerWrap.hidden = true;
+    setBiliStatus('');
     biliPlayingKey = '';
     markBiliPlaying();
   }
@@ -5273,15 +5406,12 @@
     }
   }
 
-  // Input box: a video link / BV / av plays here; anything else is a search.
+  // Input box: a playable link / BV / av plays here; plain words search.
   function submitBili(text) {
-    var v = parseBiliVideo(text);
+    var v;
+    try { v = biliSource(text); } catch (e) { setBiliStatus(e.message, true); return; }
     if (v) { playBili(v, ''); return; }
-    if (/b23\.tv\//i.test(text)) {
-      // Short links only resolve on Bilibili's side; open it and copy the full link.
-      window.open(text.trim().replace(/^(?!https?:)/i, 'https://'), '_blank', 'noopener');
-      return;
-    }
+    setBiliStatus('');
     searchBili(text);
   }
 
@@ -5355,7 +5485,11 @@
       '<span class="tail"><button type="button" class="bili-chip" id="bili-history-clear">清空</button></span></div>';
     var grid = document.createElement('div');
     grid.className = 'bili-grid';
-    hist.forEach(function (h) { grid.appendChild(makeBiliCard(h, h.title, h.key)); });
+    hist.forEach(function (h) {
+      // Entries saved before the multi-platform player only kept the B站 id.
+      var v = h.src ? h : tryBiliSource(h.key);
+      if (v) grid.appendChild(makeBiliCard(v, h.title, v.platform === 'Bilibili' ? v.key : v.platform));
+    });
     $biliHistory.appendChild(grid);
     document.getElementById('bili-history-clear').addEventListener('click', function () {
       writeBiliStore('history', []);
@@ -5378,7 +5512,7 @@
       var commaIdx = line.search(/[,，]/);
       var ref = commaIdx > 0 ? line.slice(0, commaIdx).trim() : line;
       var title = commaIdx > 0 ? line.slice(commaIdx + 1).trim() : '';
-      var v = parseBiliVideo(ref);
+      var v = tryBiliSource(ref);
       if (v) groups[groups.length - 1].items.push({ v: v, title: title });
     });
     return groups;
@@ -5450,7 +5584,7 @@
   document.addEventListener('paste', function (e) {
     if (!tabPanels.bili.classList.contains('active') || e.target === $biliInput) return;
     var text = (e.clipboardData || window.clipboardData).getData('text');
-    var v = parseBiliVideo(text);
+    var v = tryBiliSource(text);
     if (!v) return;
     e.preventDefault();
     playBili(v, '');
