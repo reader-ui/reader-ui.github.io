@@ -807,128 +807,195 @@
 
   .sf-browser .link-card:hover { transform: none; }
 
-  /* ---------- Bilibili (embedded search / space / player) ---------- */
-  .bili-modes { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  /* ---------- Viewer (local archive / picture viewer) ---------- */
+  .vw-drop { margin-top: 14px; }
+  .vw-drop small { display: block; margin-top: 6px; font-size: 12px; opacity: 0.75; }
 
-  .bili-player-wrap { margin-top: 18px; }
-  .bili-player-wrap[hidden] { display: none; }
-
-  .bili-player {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    max-height: 78vh;
-    background: #000;
-  }
-
-  .bili-player iframe,
-  .bili-player video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-
-  /* TikTok's player is portrait. */
-  .bili-player.vertical { aspect-ratio: 9 / 16; max-width: 420px; max-height: none; margin: 0 auto; }
-
-  .bili-status { margin: 10px 4px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
-  .bili-status[hidden] { display: none; }
-  .bili-status.error { color: #c0392b; }
-
-  .bili-close {
-    flex-shrink: 0;
-    border: 0;
-    background: none;
-    color: var(--text-secondary);
-    font-size: 15px;
-    line-height: 1;
-    padding: 4px 7px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all var(--transition);
-  }
-
-  .bili-close:hover { color: var(--accent); background: var(--accent-glow); }
-
-  .bili-hint {
-    padding: 8px 14px;
-    font-size: 12px;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-    line-height: 1.7;
-  }
-
-  .bili-browser-wrap { margin-top: 18px; }
-  .bili-browser-wrap[hidden] { display: none; }
-
-  .bili-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-
-  .bili-chip {
-    display: inline-flex;
+  .vw-pass {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    max-width: 100%;
-    padding: 6px 12px;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--accent-light);
+    border-radius: 10px;
+    background: var(--accent-glow);
+    font-size: 14px;
+  }
+
+  .vw-pass[hidden] { display: none; }
+  .vw-pass b { word-break: break-all; }
+
+  .vw-pass input {
+    flex: 1;
+    min-width: 180px;
+    height: 38px;
+    padding: 0 14px;
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 19px;
+    background: var(--bg-card);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .vw-pass input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+  .vw-btn {
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 17px;
     background: var(--bg-card);
     color: var(--text);
     font-size: 13px;
     font-family: inherit;
     cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
     transition: all var(--transition);
   }
 
-  .bili-chip:hover { border-color: var(--accent); color: var(--accent); }
-  .bili-chip .x { color: var(--text-secondary); font-size: 12px; padding-left: 2px; }
-  .bili-chip .x:hover { color: var(--accent); }
-  .bili-chip > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vw-btn[hidden] { display: none; }
+  .vw-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .vw-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vw-btn.primary:hover { background: var(--accent-hover); color: #fff; }
 
-  .bili-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
-    margin-top: 10px;
-  }
+  .vw-status { margin: 12px 4px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .vw-status[hidden] { display: none; }
+  .vw-status.error { color: #c0392b; }
 
-  .bili-card {
+  .vw-result[hidden] { display: none; }
+
+  .vw-bar {
     display: flex;
-    flex-direction: column;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    color: var(--text);
-    font-family: inherit;
-    text-align: left;
-    padding: 0;
-    cursor: pointer;
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-top: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
   }
 
-  .bili-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow-md); }
-  .bili-card.playing { border-color: var(--accent); }
+  .vw-title { font-size: 17px; font-weight: 700; word-break: break-all; }
+  .vw-sub { font-size: 13px; color: var(--text-secondary); margin-right: auto; }
 
-  .bili-thumb {
-    aspect-ratio: 16 / 9;
+  .vw-folders { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .vw-folders:empty { display: none; }
+  .vw-folders .category-chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* The picture strip: images stack edge to edge for fast, smooth scrolling.
+     Each slot holds a tall placeholder until its picture has loaded, so lazy
+     loading only fetches what is near the screen, and off-screen slots skip
+     layout and paint entirely. */
+  .vw-gallery { display: flex; flex-direction: column; align-items: center; margin-top: 12px; }
+  .vw-gallery:empty { display: none; }
+
+  .vw-slot {
+    width: 100%;
+    max-width: 980px;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1200px;
+    cursor: zoom-in;
+  }
+
+  .vw-slot img {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 70vh;
+    background: var(--bg-card);
+  }
+
+  .vw-slot img.ready { min-height: 0; background: none; }
+
+  .vw-slot-name {
+    display: block;
+    padding: 4px 2px 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    word-break: break-all;
+  }
+
+  .vw-files { margin-top: 10px; }
+  .vw-files:empty { display: none; }
+
+  .vw-file {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 2px;
+  }
+
+  .vw-file-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .vw-file-name { flex: 1; min-width: 160px; font-size: 14px; word-break: break-all; }
+  .vw-file-size { font-size: 12px; color: var(--text-secondary); }
+
+  .vw-preview {
+    margin-top: 10px;
+    max-height: 60vh;
+    overflow: auto;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-card);
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .vw-preview-media { margin-top: 10px; width: 100%; max-height: 70vh; background: #000; border-radius: 8px; }
+
+  /* Full-screen picture view. */
+  .vw-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: rgba(0, 0, 0, 0.94);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--cover-a, #e79b6f), var(--cover-b, #d86a36));
-    color: rgba(255, 255, 255, 0.92);
-    font-size: 30px;
+    touch-action: pan-y pinch-zoom;
   }
 
-  .bili-card-info { padding: 9px 12px 11px; min-width: 0; }
+  .vw-lightbox[hidden] { display: none; }
+  .vw-lightbox img { max-width: 100vw; max-height: 100vh; object-fit: contain; user-select: none; }
 
-  .bili-card-title {
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.45;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+  .vw-lb-btn {
+    position: absolute;
+    border: 0;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .vw-lb-btn:hover { background: rgba(255, 255, 255, 0.25); }
+  .vw-lb-prev { left: 14px; top: 50%; transform: translateY(-50%); }
+  .vw-lb-next { right: 14px; top: 50%; transform: translateY(-50%); }
+  .vw-lb-close { right: 14px; top: 14px; }
+
+  .vw-lb-count {
+    position: absolute;
+    left: 50%; bottom: 14px;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 4px 12px;
+    border-radius: 12px;
+    max-width: 90vw;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-
-  .bili-card:hover .bili-card-title { color: var(--accent); }
-  .bili-card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
 
   /* ---------- Local file picker ---------- */
   .local-upload { margin-top: 8px; }
@@ -983,13 +1050,17 @@
     .book-search-clear { right: 48px; }
     .links-list { grid-template-columns: 1fr; }
     .sf-browser-frame { height: 60vh; min-height: 320px; }
-    .bili-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-    .bili-card-title { font-size: 13px; }
   }
 
   @media (max-width: 520px) {
     .hdr-btn span { display: none; }
     .hdr-btn { padding: 0 13px; }
+  }
+
+  @media (max-width: 420px) {
+    /* Four tabs only fit a phone's width without their icons. */
+    .nav-a .icn { display: none; }
+    .nav-a .text { font-size: 13px; }
   }
 
   @media (max-width: 400px) {
@@ -2187,9 +2258,9 @@
         <span class="icn">&#128640;</span>
         <span class="text">SF Books<i class="count" id="nav-sf-count">&middot;</i></span>
       </button>
-      <button class="nav-a" data-tab="bili">
-        <span class="icn">&#128250;</span>
-        <span class="text">Video<i class="count" id="nav-bili-count">&middot;</i></span>
+      <button class="nav-a" data-tab="viewer">
+        <span class="icn">&#128450;</span>
+        <span class="text">Viewer</span>
       </button>
     </nav>
 
@@ -2249,43 +2320,34 @@
         </div>
       </div>
 
-      <div class="tab-panel" id="tab-bili">
-        <form class="book-search" id="bili-form" autocomplete="off">
-          <input type="text" class="book-search-input" id="bili-input" placeholder="Paste a video URL to play it here (Bilibili, YouTube, Vimeo, TikTok…)" enterkeyhint="go">
-          <button type="button" class="book-search-clear" id="bili-clear">&times;</button>
-          <span class="book-search-icon">&#128269;</span>
+      <div class="tab-panel" id="tab-viewer">
+        <div class="sec-head first">
+          <span class="icn">&#128450;</span>
+          <span class="main-title">Archive Viewer</span>
+          <span class="sub-title">(unpacked on this device &mdash; nothing is uploaded)</span>
+        </div>
+        <div class="drop-zone vw-drop" id="vw-drop">
+          Drop a zip / rar / 7z (or pictures) here, or click to choose
+          <small>zip &middot; rar &middot; 7z &middot; tar &middot; gz &middot; cbz &middot; cbr &middot; jpg / png / webp &hellip;</small>
+          <input type="file" id="vw-input" multiple>
+        </div>
+        <form class="vw-pass" id="vw-pass" hidden autocomplete="off">
+          <span>&#128274; <b id="vw-pass-name"></b> needs a password</span>
+          <input type="password" id="vw-pass-input" placeholder="Type the password" autocomplete="off">
+          <button type="submit" class="vw-btn primary">Unpack</button>
         </form>
-        <div class="bili-modes" id="bili-modes">
-          <button type="button" class="category-chip active" data-mode="upuser">搜 UP主</button>
-          <button type="button" class="category-chip" data-mode="video">搜视频</button>
-        </div>
-        <p class="bili-status" id="bili-status" role="status" hidden></p>
-
-        <div class="bili-player-wrap sf-browser" id="bili-player-wrap" hidden>
-          <div class="sf-browser-bar">
-            <span class="sf-browser-dot"></span><span class="sf-browser-dot"></span><span class="sf-browser-dot"></span>
-            <span class="sf-browser-title" id="bili-player-title"></span>
-            <a class="sf-browser-open" id="bili-player-open" target="_blank" rel="noopener noreferrer" title="在 bilibili.com 打开">&#8599;</a>
-            <button type="button" class="bili-close" id="bili-player-close" title="关闭播放器">&times;</button>
+        <p class="vw-status" id="vw-status" role="status" hidden></p>
+        <div class="vw-result" id="vw-result" hidden>
+          <div class="vw-bar">
+            <span class="vw-title" id="vw-title"></span>
+            <span class="vw-sub" id="vw-sub"></span>
+            <button type="button" class="vw-btn" id="vw-gbk" hidden title="Re-read the file names as Chinese (GBK)">Fix garbled names</button>
+            <button type="button" class="vw-btn" id="vw-close">Close</button>
           </div>
-          <div class="bili-player" id="bili-player"></div>
+          <div class="vw-folders" id="vw-folders"></div>
+          <div class="vw-gallery" id="vw-gallery"></div>
+          <div class="vw-files" id="vw-files"></div>
         </div>
-
-        <div class="bili-browser-wrap sf-browser" id="bili-browser-wrap" hidden>
-          <div class="sf-browser-bar">
-            <span class="sf-browser-dot"></span><span class="sf-browser-dot"></span><span class="sf-browser-dot"></span>
-            <span class="sf-browser-title" id="bili-browser-title"></span>
-            <button type="button" class="bili-close" id="bili-browser-save" title="收藏这个 UP主" hidden>&#9734;</button>
-            <a class="sf-browser-open" id="bili-browser-open" target="_blank" rel="noopener noreferrer" title="在 bilibili.com 打开">&#8599;</a>
-            <button type="button" class="bili-close" id="bili-browser-close" title="关闭">&times;</button>
-          </div>
-          <div class="bili-hint" id="bili-browser-hint"></div>
-          <div class="sf-browser-frame" id="bili-browser-frame"></div>
-        </div>
-
-        <div id="bili-saved"></div>
-        <div id="bili-history"></div>
-        <div id="bili-list"></div>
       </div>
 
     </div>
@@ -4811,10 +4873,9 @@
 
   // ============ Tab switching (SFACG top nav) ============
   var tabBtns = document.querySelectorAll('.nav-a');
-  var tabPanels = { books: document.getElementById('tab-books'), links: document.getElementById('tab-links'), sf: document.getElementById('tab-sf'), bili: document.getElementById('tab-bili') };
+  var tabPanels = { books: document.getElementById('tab-books'), links: document.getElementById('tab-links'), sf: document.getElementById('tab-sf'), viewer: document.getElementById('tab-viewer') };
   var linksLoaded = false;
   var sfLoaded = false;
-  var biliLoaded = false;
 
   tabBtns.forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -4834,10 +4895,6 @@
       if (target === 'sf' && !sfLoaded) {
         sfLoaded = true;
         loadSfBooks();
-      }
-      if (target === 'bili' && !biliLoaded) {
-        biliLoaded = true;
-        loadBili();
       }
     });
   });
@@ -4900,14 +4957,13 @@
   }
 
   function showListCounts() {
-    var u = readCachedList('urls.txt'), s = readCachedList('sf.txt'), b = readCachedList('bili.txt');
+    var u = readCachedList('urls.txt'), s = readCachedList('sf.txt');
     if (u !== null) $navLinkCount.textContent = countListItems(u);
     if (s !== null) $navSfCount.textContent = countListItems(s);
-    if (b !== null) $navBiliCount.textContent = parseBiliList(b).reduce(function (n, g) { return n + g.items.length; }, 0);
   }
 
   function prefetchListFiles() {
-    Promise.all([fetchListFile('urls.txt'), fetchListFile('sf.txt'), fetchListFile('bili.txt')]).then(showListCounts);
+    Promise.all([fetchListFile('urls.txt'), fetchListFile('sf.txt')]).then(showListCounts);
   }
 
   async function loadLinks() {
@@ -5148,446 +5204,519 @@
     frameHolder.appendChild(iframe);
   }
 
-  // ============ Bilibili tab (embedded search + player) ============
-  // Everything here works without a Bilibili account: search.bilibili.com
-  // and player.bilibili.com both render inside a frame signed out. Creator
-  // space pages do not (they bounce to a login wall when framed) and the
-  // JSON API sends no CORS headers, so a creator is "saved" as a search for
-  // their name — the search page shows their card and newest uploads.
-  // Videos clicked inside Bilibili's own search page open on bilibili.com in
-  // a new tab (its links say so and a frame cannot override that); anything
-  // pasted here, listed in bili.txt or in the history plays in this tab.
-  var $biliForm = document.getElementById('bili-form');
-  var $biliInput = document.getElementById('bili-input');
-  var $biliClear = document.getElementById('bili-clear');
-  var $biliModes = document.getElementById('bili-modes');
-  var $biliPlayerWrap = document.getElementById('bili-player-wrap');
-  var $biliPlayer = document.getElementById('bili-player');
-  var $biliPlayerTitle = document.getElementById('bili-player-title');
-  var $biliPlayerOpen = document.getElementById('bili-player-open');
-  var $biliBrowserWrap = document.getElementById('bili-browser-wrap');
-  var $biliBrowserFrame = document.getElementById('bili-browser-frame');
-  var $biliBrowserTitle = document.getElementById('bili-browser-title');
-  var $biliBrowserOpen = document.getElementById('bili-browser-open');
-  var $biliBrowserHint = document.getElementById('bili-browser-hint');
-  var $biliBrowserSave = document.getElementById('bili-browser-save');
-  var $biliSaved = document.getElementById('bili-saved');
-  var $biliHistory = document.getElementById('bili-history');
-  var $biliList = document.getElementById('bili-list');
-  var $navBiliCount = document.getElementById('nav-bili-count');
-  var $biliStatus = document.getElementById('bili-status');
+  // ============ Viewer tab (local archives and pictures) ============
+  // Archives are unpacked by 7-Zip compiled to WebAssembly (7z-wasm, the full
+  // 7zz with RAR support), running in a worker so the page stays smooth.
+  // The worker reads the chosen file straight from disk through Emscripten's
+  // WORKERFS and unpacks into memory: nothing is uploaded anywhere — the
+  // only network traffic is the 7-Zip program itself, fetched once from
+  // jsDelivr and then served from the browser cache.
+  var SEVENZIP_CDN = 'https://cdn.jsdelivr.net/npm/7z-wasm@1.2.0/';
+  var VW_ARCHIVE_RE = /\.(zip|rar|7z|cbz|cbr|cb7|tar|gz|tgz|bz2|tbz2?|xz|txz|zst|lzh|lha|cab|iso|wim|arj|z|lzma)$|\.(?:part\d+\.rar|7z\.001|zip\.001|r\d\d)$/i;
+  var VW_IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|bmp|svg|ico|jfif)$/i;
+  var VW_TEXT_RE = /\.(txt|md|json|csv|tsv|log|nfo|ini|xml|html?|css|js|srt|ass|vtt|yml|yaml)$/i;
+  var VW_MEDIA_RE = /\.(mp4|m4v|webm|mov|ogv|mp3|m4a|ogg|oga|wav|flac|aac|opus)$/i;
 
-  var biliMode = 'upuser';
-  var biliKeyword = '';
-  var biliPlayingKey = '';
+  // Runs inside the worker. One fresh 7-Zip instance per job: 7zz keeps
+  // global state between runs, and instantiating the cached module is quick.
+  var VW_WORKER_SRC = [
+    "importScripts('" + SEVENZIP_CDN + "7zz.umd.js');",
+    "onmessage = async function (e) {",
+    "  var job = e.data, log = [];",
+    "  try {",
+    "    var sz = await SevenZip({",
+    "      locateFile: function (p) { return '" + SEVENZIP_CDN + "' + p; },",
+    "      print: function (l) { log.push(l); }, printErr: function (l) { log.push(l); }",
+    "    });",
+    "    sz.FS.mkdir('/in');",
+    "    sz.FS.mount(sz.WORKERFS, { files: job.files }, '/in');",
+    "    sz.FS.mkdir('/out');",
+    // Always pass -p: without it an encrypted archive would wait for a
+    // typed password on stdin. A placeholder simply fails as a wrong password.
+    "    var args = ['x', '/in/' + job.files[0].name, '-o/out', '-y', '-bd', '-p' + (job.password || '\\u0001none')];",
+    "    var code;",
+    "    try { code = sz.callMain(args); } catch (ex) { code = ex && typeof ex.status === 'number' ? ex.status : -1; if (code === -1) log.push(String(ex)); }",
+    "    var out = [];",
+    "    (function walk(dir, rel) {",
+    "      sz.FS.readdir(dir).forEach(function (name) {",
+    "        if (name === '.' || name === '..') return;",
+    "        var p = dir + '/' + name, st = sz.FS.stat(p);",
+    "        if (sz.FS.isDir(st.mode)) { walk(p, rel + name + '/'); return; }",
+    "        out.push({ path: rel + name, size: st.size, blob: new Blob([sz.FS.readFile(p)]) });",
+    "        sz.FS.unlink(p);",
+    "      });",
+    "    })('/out', '');",
+    "    postMessage({ id: job.id, code: code, log: log.join('\\n'), files: out });",
+    "  } catch (err) {",
+    "    postMessage({ id: job.id, code: -1, log: log.join('\\n') + '\\n' + String(err && err.message || err), files: [] });",
+    "  }",
+    "};"
+  ].join('\n');
 
-  function readBiliStore(key) {
-    try { return JSON.parse(localStorage.getItem('reader-bili-' + key)) || []; } catch (e) { return []; }
+  var $vwDrop = document.getElementById('vw-drop');
+  var $vwInput = document.getElementById('vw-input');
+  var $vwPass = document.getElementById('vw-pass');
+  var $vwPassName = document.getElementById('vw-pass-name');
+  var $vwPassInput = document.getElementById('vw-pass-input');
+  var $vwStatus = document.getElementById('vw-status');
+  var $vwResult = document.getElementById('vw-result');
+  var $vwTitle = document.getElementById('vw-title');
+  var $vwSub = document.getElementById('vw-sub');
+  var $vwGbk = document.getElementById('vw-gbk');
+  var $vwFolders = document.getElementById('vw-folders');
+  var $vwGallery = document.getElementById('vw-gallery');
+  var $vwFiles = document.getElementById('vw-files');
+
+  var vwJobId = 0;
+  var vwWorker = null;
+  var vwArchive = null;   // { file, password, zip, files } of what is showing / pending
+  var vwEntries = [];     // { path, name, dir, size, blob, url }
+  var vwImages = [];      // image entries in the current folder filter
+  var vwUrls = [];
+  var vwSort = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+  function setVwStatus(msg, isError) {
+    $vwStatus.textContent = msg || '';
+    $vwStatus.classList.toggle('error', !!isError);
+    $vwStatus.hidden = !msg;
   }
 
-  function writeBiliStore(key, list) {
-    try { localStorage.setItem('reader-bili-' + key, JSON.stringify(list)); } catch (e) {}
+  function vwSize(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+    if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
+    return (n / 1073741824).toFixed(2) + ' GB';
   }
 
-  // ---- Playback sources (after download.py's playback.mjs, MIT) ----
-  // A pasted link maps to the platform's own embed player, which handles its
-  // own access rules — no account, no download. Browser-side downloading of
-  // Bilibili/YouTube media stays blocked by CORS (download.py's own tests say
-  // so), so this tab only plays.
-  //
-  // biliSource(text) returns { kind: 'iframe' | 'media', src, page, key,
-  // platform, vertical } for a playable link, null when the text is not a
-  // link at all (the box then searches), and throws a readable Error for a
-  // link it recognises but cannot play.
-  var BILI_HOSTS = { 'bilibili.com': 1, 'www.bilibili.com': 1, 'm.bilibili.com': 1 };
-  var YT_HOSTS = { 'youtube.com': 1, 'www.youtube.com': 1, 'm.youtube.com': 1, 'music.youtube.com': 1, 'youtube-nocookie.com': 1, 'www.youtube-nocookie.com': 1 };
-  var VIMEO_HOSTS = { 'vimeo.com': 1, 'www.vimeo.com': 1, 'player.vimeo.com': 1 };
-  var TIKTOK_HOSTS = { 'tiktok.com': 1, 'www.tiktok.com': 1, 'm.tiktok.com': 1 };
-
-  // "90", "1:30", "1m30s" → seconds (0 when absent or malformed).
-  function biliSeconds(value) {
-    if (!value) return 0;
-    if (/^\d+$/.test(value)) return Math.min(Number(value), 8640000);
-    if (/^\d+(?::\d+){1,2}$/.test(value)) {
-      var parts = value.split(':').map(Number);
-      if (parts.slice(1).some(function (n) { return n > 59; })) return 0;
-      return Math.min(parts.reduce(function (t, n) { return t * 60 + n; }, 0), 8640000);
-    }
-    var m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(value);
-    return m ? Math.min(Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0), 8640000) : 0;
+  function vwUrl(entry) {
+    if (!entry.url) { entry.url = URL.createObjectURL(entry.blob); vwUrls.push(entry.url); }
+    return entry.url;
   }
 
-  function biliSource(text) {
-    var s = String(text || '').trim();
-    if (!s) return null;
-    // Bare ids are the quickest thing to paste: BV1xx411c7mD, av170001, ?p=2 allowed.
-    var bare = /^(BV[0-9A-Za-z]{10}|av\d+)(\?.*)?$/i.exec(s);
-    if (bare) s = 'https://www.bilibili.com/video/' + (bare[1].charAt(0) === 'B' ? bare[1] : bare[1].toLowerCase()) + '/' + (bare[2] || '');
-    else if (/^(?:[\w-]+\.)*(?:bilibili\.com|b23\.tv|youtube\.com|youtu\.be|vimeo\.com|tiktok\.com)\//i.test(s)) s = 'https://' + s;
-    if (!/^https?:\/\//i.test(s)) return null;
-    var url;
-    try { url = new URL(s); } catch (e) { return null; }
-    if (url.username || url.password) throw new Error('请粘贴不含账号密码的公开链接。');
-    var host = url.hostname.toLowerCase();
-    var q = url.searchParams;
-    var target, m;
-
-    if (BILI_HOSTS[host]) {
-      m = /^\/video\/(BV[A-Za-z0-9]{10}|av\d+)\/?$/i.exec(url.pathname);
-      if (!m) throw new Error('请粘贴完整的 B站视频链接（bilibili.com/video/BV… 或 /video/av…）。');
-      var id = /^bv/i.test(m[1]) ? 'BV' + m[1].slice(2) : m[1].toLowerCase();
-      var part = q.get('p') || '1';
-      if (!/^[1-9]\d{0,5}$/.test(part)) throw new Error('B站分P编号必须是正整数。');
-      var t = biliSeconds(q.get('t'));
-      target = new URL('https://player.bilibili.com/player.html');
-      target.searchParams.set(id.charAt(0) === 'B' ? 'bvid' : 'aid', id.charAt(0) === 'B' ? id : id.slice(2));
-      target.searchParams.set('p', part);
-      target.searchParams.set('autoplay', '1');
-      target.searchParams.set('high_quality', '1');
-      target.searchParams.set('danmaku', '0');
-      if (t) target.searchParams.set('t', String(t));
-      var key = id + (part !== '1' ? '?p=' + part : '');
-      return { kind: 'iframe', platform: 'Bilibili', src: target.href, key: key,
-        page: 'https://www.bilibili.com/video/' + id + '/' + (part !== '1' ? '?p=' + part : '') };
-    }
-    if (host === 'live.bilibili.com') {
-      m = /^\/(?:blanc\/)?([1-9]\d*)\/?$/.exec(url.pathname);
-      if (!m) throw new Error('请粘贴带房间号的 B站直播间链接（live.bilibili.com/房间号）。');
-      target = new URL('https://www.bilibili.com/blackboard/live/live-activity-player.html');
-      target.search = new URLSearchParams({ cid: m[1], quality: '0', danmaku: '0', send: '0', sendpanel: '0' }).toString();
-      return { kind: 'iframe', platform: 'B站直播', src: target.href, key: 'live' + m[1], page: 'https://live.bilibili.com/' + m[1] };
-    }
-    if (host === 'b23.tv') throw new Error('b23.tv 短链接需要先在浏览器打开，再复制完整的 bilibili.com 视频链接粘贴到这里。');
-    if (YT_HOSTS[host] || host === 'youtu.be') {
-      var yid = host === 'youtu.be' ? url.pathname.split('/')[1] : q.get('v') || ((/\/(?:shorts|live|embed|v)\/([^/?]+)/.exec(url.pathname) || [])[1]);
-      if (!/^[A-Za-z0-9_-]{11}$/.test(yid || '')) throw new Error('请粘贴含视频 ID 的 YouTube 视频 / Shorts / 直播链接。');
-      target = new URL('https://www.youtube-nocookie.com/embed/' + yid);
-      target.search = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0' }).toString();
-      var ys = biliSeconds(q.get('t') || q.get('start'));
-      if (ys) target.searchParams.set('start', String(ys));
-      return { kind: 'iframe', platform: 'YouTube', src: target.href, key: 'yt:' + yid, page: 'https://www.youtube.com/watch?v=' + yid };
-    }
-    if (TIKTOK_HOSTS[host]) {
-      m = /^\/(?:@[^/]+\/video\/|player\/v1\/|embed\/v2\/|v\/)(\d{10,25})(?:[/?]|$)/.exec(url.pathname);
-      if (!m) throw new Error('请粘贴含 /video/ID 的 TikTok 链接。');
-      target = new URL('https://www.tiktok.com/player/v1/' + m[1]);
-      target.search = new URLSearchParams({ autoplay: '1', controls: '1', description: '1', music_info: '1' }).toString();
-      return { kind: 'iframe', platform: 'TikTok', src: target.href, key: 'tt:' + m[1], page: url.href, vertical: true };
-    }
-    if (host === 'vm.tiktok.com' || host === 'vt.tiktok.com') throw new Error('TikTok 短链接需要先打开，再粘贴完整的 /@用户/video/ID 链接。');
-    if (VIMEO_HOSTS[host]) {
-      var vm = url.pathname.match(/\d{6,}(?=\/|$)/g);
-      var vid = vm && vm[vm.length - 1];
-      if (!vid) throw new Error('请粘贴含数字视频 ID 的 Vimeo 链接。');
-      target = new URL('https://player.vimeo.com/video/' + vid);
-      var h = q.get('h');
-      if (h && /^[A-Za-z0-9]+$/.test(h)) target.searchParams.set('h', h);
-      target.searchParams.set('dnt', '1');
-      target.searchParams.set('autoplay', '1');
-      target.searchParams.set('playsinline', '1');
-      return { kind: 'iframe', platform: 'Vimeo', src: target.href, key: 'vimeo:' + vid, page: url.href };
-    }
-    if (/\.(mp4|m4v|webm|mov|mp3|m4a|ogg|ogv|wav|m3u8)$/i.test(url.pathname)) {
-      return { kind: 'media', platform: '媒体文件', src: url.href, key: url.href, page: url.href, hls: /\.m3u8$/i.test(url.pathname) };
-    }
-    throw new Error('这个链接不能在本页播放。支持 B站视频 / 直播间、YouTube、Vimeo、TikTok 和直链媒体文件。');
+  function clearVw() {
+    vwUrls.forEach(function (u) { URL.revokeObjectURL(u); });
+    vwUrls = [];
+    vwEntries = [];
+    vwImages = [];
+    $vwFolders.innerHTML = '';
+    $vwGallery.innerHTML = '';
+    $vwFiles.innerHTML = '';
+    $vwResult.hidden = true;
+    $vwGbk.hidden = true;
+    closeVwLightbox();
   }
 
-  // For lists and paste: a playable source or null, never an exception.
-  function tryBiliSource(text) {
-    try { return biliSource(text); } catch (e) { return null; }
+  function handleVwFiles(fileList) {
+    var files = Array.prototype.slice.call(fileList || []);
+    if (!files.length) return;
+    var archive = files.filter(function (f) { return VW_ARCHIVE_RE.test(f.name); })[0];
+    if (archive) { openVwArchive({ file: archive, password: '' }); return; }
+    // Plain pictures / files: show them as they are, no unpacking needed.
+    if (vwWorker) { vwWorker.terminate(); vwWorker = null; }
+    $vwPass.hidden = true;
+    setVwStatus('');
+    vwArchive = null;
+    showVwEntries(files.length === 1 ? files[0].name : files.length + ' files', files.map(function (f) {
+      return { path: f.webkitRelativePath || f.name, size: f.size, blob: f };
+    }));
   }
 
-  function setBiliStatus(msg, isError) {
-    $biliStatus.textContent = msg || '';
-    $biliStatus.classList.toggle('error', !!isError);
-    $biliStatus.hidden = !msg;
+  // ---- Zip file names in a legacy code page ----
+  // Zips made by Windows in Chinese (and Japanese, Korean…) locales store
+  // names in the local code page, without the UTF-8 flag. 7-Zip's WASM build
+  // has no code-page tables, so it mangles such names and cannot even write
+  // the files. Instead, every such name is swapped in place for an ASCII
+  // placeholder of the same byte length (so no offsets move and encrypted
+  // entries stay valid — names are not part of zip encryption), and the
+  // real names are decoded here from the original bytes afterwards.
+  // Returns { file, tokens: { token: Uint8Array } } or null when nothing
+  // needs fixing (or the zip is a kind this does not handle, e.g. Zip64).
+  async function vwPatchZipNames(file) {
+    if (!/\.(zip|cbz)$/i.test(file.name) || file.size > 1536 * 1048576) return null;
+    var buf = new Uint8Array(await file.arrayBuffer());
+    var dv = new DataView(buf.buffer);
+    var eocd = -1;
+    for (var i = buf.length - 22; i >= Math.max(0, buf.length - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) return null;
+    var count = dv.getUint16(eocd + 10, true);
+    var p = dv.getUint32(eocd + 16, true);
+    if (count === 0xffff || p === 0xffffffff) return null;
+
+    var tokens = {}, bySegment = {}, next = 0, patched = false;
+    var TOKEN_CHARS = '0123456789abcdefghijklmnopqrstuvwxyz';
+    function tokenFor(seg) {
+      var k = Array.prototype.join.call(seg, ',');
+      if (bySegment[k]) return bySegment[k];
+      var id = (next++).toString(36), t = '~' + id;
+      if (t.length > seg.length) return null;
+      while (t.length < seg.length) t += '_';
+      bySegment[k] = t;
+      tokens[t] = seg;
+      return t;
+    }
+    // Same-length ASCII stand-in for a raw name, segment by segment.
+    function standIn(raw) {
+      var out = '', start = 0;
+      for (var j = 0; j <= raw.length; j++) {
+        if (j < raw.length && raw[j] !== 0x2f) continue;
+        var seg = raw.subarray(start, j);
+        var ascii = true;
+        for (var m = 0; m < seg.length; m++) if (seg[m] > 0x7f) { ascii = false; break; }
+        if (ascii) out += String.fromCharCode.apply(null, seg);
+        else { var t = tokenFor(seg.slice()); if (!t) return null; out += t; }
+        if (j < raw.length) out += '/';
+        start = j + 1;
+      }
+      return out;
+    }
+
+    for (var n = 0; n < count; n++) {
+      if (p + 46 > buf.length || dv.getUint32(p, true) !== 0x02014b50) return null;
+      var flags = dv.getUint16(p + 8, true);
+      var nameLen = dv.getUint16(p + 28, true);
+      var extraLen = dv.getUint16(p + 30, true);
+      var commentLen = dv.getUint16(p + 32, true);
+      var local = dv.getUint32(p + 42, true);
+      var name = buf.subarray(p + 46, p + 46 + nameLen);
+      var needs = false;
+      if (!(flags & 0x800)) for (var q = 0; q < name.length; q++) if (name[q] > 0x7f) { needs = true; break; }
+      if (needs) {
+        var stand = standIn(name);
+        if (stand === null) return null;
+        for (var c = 0; c < nameLen; c++) name[c] = stand.charCodeAt(c);
+        // The local header repeats the name; patch it too when it matches.
+        if (local + 30 <= buf.length && dv.getUint32(local, true) === 0x04034b50 && dv.getUint16(local + 26, true) === nameLen) {
+          for (var c2 = 0; c2 < nameLen; c2++) buf[local + 30 + c2] = stand.charCodeAt(c2);
+        }
+        patched = true;
+      }
+      p += 46 + nameLen + extraLen + commentLen;
+    }
+    if (!patched) return null;
+    return { file: new File([buf], file.name), tokens: tokens };
   }
 
-  function stopBiliPlayer() {
-    var active = $biliPlayer.firstChild;
-    if (active && active.tagName === 'VIDEO') { active.pause(); active.removeAttribute('src'); active.load(); }
-    if (active && active.tagName === 'IFRAME') active.removeAttribute('src');
-    $biliPlayer.classList.remove('vertical');
-    $biliPlayer.innerHTML = '';
+  var VW_NAME_ENCODINGS = [
+    { enc: 'gb18030', label: 'Names: Chinese (GBK)' },
+    { enc: 'big5', label: 'Names: Chinese (Big5)' },
+    { enc: 'shift_jis', label: 'Names: Japanese' },
+    { enc: 'euc-kr', label: 'Names: Korean' }
+  ];
+
+  // Put the real names back into placeholder paths.
+  function vwRealPath(path, zip) {
+    if (!zip) return path;
+    var dec = new TextDecoder(VW_NAME_ENCODINGS[zip.enc].enc);
+    return path.split('/').map(function (seg) {
+      var raw = zip.tokens[seg];
+      if (!raw) return seg;
+      try { return new TextDecoder('utf-8', { fatal: true }).decode(raw); } catch (e) {}
+      return dec.decode(raw);
+    }).join('/');
   }
 
-  function playBili(v, title) {
-    if (v.kind === 'media' && v.hls && !document.createElement('video').canPlayType('application/vnd.apple.mpegurl')) {
-      setBiliStatus('这个浏览器不能直接播放 HLS (.m3u8)。', true);
+  async function openVwArchive(arch) {
+    vwArchive = arch;
+    $vwPass.hidden = true;
+    clearVw();
+    setVwStatus('Unpacking ' + arch.file.name + ' (' + vwSize(arch.file.size) + ') on this device…');
+    var id = ++vwJobId;
+    if (arch.zip === undefined) {
+      try { arch.zip = await vwPatchZipNames(arch.file); } catch (e) { arch.zip = null; }
+      if (arch.zip) arch.zip.enc = 0;
+      if (id !== vwJobId) return;
+    }
+    // A new worker per archive; terminating the old one cancels any run.
+    if (vwWorker) vwWorker.terminate();
+    vwWorker = new Worker(URL.createObjectURL(new Blob([VW_WORKER_SRC], { type: 'text/javascript' })));
+    vwWorker.onmessage = function (e) {
+      if (e.data.id !== vwJobId) return;
+      vwWorker.terminate();
+      vwWorker = null;
+      onVwUnpacked(arch, e.data);
+    };
+    vwWorker.onerror = function (e) {
+      if (id !== vwJobId) return;
+      setVwStatus('Could not start the unpacker' + (e.message ? ': ' + e.message : '') + '. Check the connection the first time — 7-Zip itself is downloaded once.', true);
+    };
+    vwWorker.postMessage({ id: id, files: [arch.zip ? arch.zip.file : arch.file], password: arch.password });
+  }
+
+  function onVwUnpacked(arch, res) {
+    var log = res.log || '';
+    var wrongPassword = /wrong password|encrypted archive/i.test(log);
+    if (wrongPassword && (res.code !== 0 || !res.files.length)) {
+      $vwPassName.textContent = arch.file.name;
+      $vwPass.hidden = false;
+      setVwStatus(arch.password ? 'Wrong password — try again.' : '', !!arch.password);
+      $vwPassInput.value = '';
+      $vwPassInput.focus();
       return;
     }
-    stopBiliPlayer();
-    var el;
-    if (v.kind === 'media') {
-      el = document.createElement('video');
-      el.controls = true;
-      el.playsInline = true;
-      el.preload = 'metadata';
-      el.addEventListener('error', function () {
-        if ($biliPlayer.firstChild === el) setBiliStatus('播放失败：这个文件或编码在当前浏览器不可用。', true);
+    if (!res.files.length) {
+      var reason = /can ?not open (the )?file as archive|is not archive/i.test(log) ? 'This file is not an archive 7-Zip can read.'
+        : /out of memory|memory access out of bounds|cannot enlarge memory/i.test(log) ? 'The archive is too large to unpack in the browser.'
+        : 'Nothing could be unpacked.';
+      setVwStatus(reason + (log ? ' (' + log.split('\n').filter(function (l) { return /error|cannot|can not|wrong|unsupported/i.test(l); }).slice(0, 2).join(' ') + ')' : ''), true);
+      return;
+    }
+    var warn = res.code !== 0 ? ' Some files could not be unpacked (the archive may be damaged or incomplete).' : '';
+    setVwStatus(warn.trim(), !!warn);
+    arch.files = res.files;
+    showVwArchive(arch);
+  }
+
+  function showVwArchive(arch) {
+    showVwEntries(arch.file.name, arch.files.map(function (f) {
+      return { path: vwRealPath(f.path, arch.zip), size: f.size, blob: f.blob };
+    }));
+    // Legacy-code-page names: let the reader switch the decoding if they look wrong.
+    $vwGbk.hidden = !arch.zip;
+    if (arch.zip) $vwGbk.textContent = VW_NAME_ENCODINGS[arch.zip.enc].label + ' ▾';
+  }
+
+  function showVwEntries(title, files) {
+    clearVw();
+    vwEntries = files.map(function (f) {
+      var slash = f.path.lastIndexOf('/');
+      return { path: f.path, name: f.path.slice(slash + 1), dir: slash > 0 ? f.path.slice(0, slash) : '', size: f.size, blob: f.blob, url: null };
+    }).filter(function (e) {
+      // macOS resource forks and Windows thumbnail caches are noise.
+      return !/(^|\/)(__MACOSX\/|\._)|(^|\/)(Thumbs\.db|\.DS_Store|desktop\.ini)$/i.test(e.path);
+    }).sort(function (a, b) { return vwSort.compare(a.path, b.path); });
+
+    var images = vwEntries.filter(function (e) { return VW_IMAGE_RE.test(e.name); });
+    var others = vwEntries.filter(function (e) { return !VW_IMAGE_RE.test(e.name); });
+    var total = vwEntries.reduce(function (n, e) { return n + e.size; }, 0);
+
+    $vwTitle.textContent = title;
+    $vwSub.textContent = images.length + ' pictures · ' + others.length + ' other files · ' + vwSize(total);
+    $vwGbk.hidden = true;
+    $vwResult.hidden = false;
+
+    // Folder chips: one per folder that holds pictures, when there is more than one.
+    var dirs = [];
+    images.forEach(function (e) { if (dirs.indexOf(e.dir) < 0) dirs.push(e.dir); });
+    if (dirs.length > 1) {
+      var all = makeVwChip('All pictures (' + images.length + ')', true);
+      all.addEventListener('click', function () { selectVwChip(all); renderVwGallery(images); });
+      $vwFolders.appendChild(all);
+      dirs.forEach(function (d) {
+        var inDir = images.filter(function (e) { return e.dir === d; });
+        var chip = makeVwChip((d || '(top level)') + ' (' + inDir.length + ')', false);
+        chip.title = d || '(top level)';
+        chip.addEventListener('click', function () { selectVwChip(chip); renderVwGallery(inDir); });
+        $vwFolders.appendChild(chip);
       });
-      el.src = v.src;
-      el.play().catch(function () {});
-    } else {
-      el = document.createElement('iframe');
-      el.title = v.platform + ' player';
-      el.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
-      el.allowFullscreen = true;
-      el.referrerPolicy = 'strict-origin-when-cross-origin';
-      el.setAttribute('scrolling', 'no');
-      el.src = v.src;
     }
-    $biliPlayer.classList.toggle('vertical', !!v.vertical);
-    $biliPlayer.appendChild(el);
-    $biliPlayerTitle.textContent = (title || v.key.replace(/^(?:yt|tt|vimeo):|^live/, '')) + (v.platform !== 'Bilibili' ? ' · ' + v.platform : '');
-    $biliPlayerOpen.href = v.page;
-    $biliPlayerWrap.hidden = false;
-    setBiliStatus(v.kind === 'iframe' ? '已打开 ' + v.platform + ' 官方播放器，无需登录；没有自动播放就点一下播放器。' : '');
-    biliPlayingKey = v.key;
-    markBiliPlaying();
-
-    var hist = readBiliStore('history').filter(function (h) { return h.key !== v.key; });
-    hist.unshift({ kind: v.kind, platform: v.platform, src: v.src, page: v.page, key: v.key, vertical: v.vertical, hls: v.hls, title: title || '' });
-    writeBiliStore('history', hist.slice(0, 12));
-    renderBiliHistory();
-
-    $biliPlayerWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderVwGallery(images);
+    renderVwFiles(others);
   }
 
-  function closeBiliPlayer() {
-    stopBiliPlayer();
-    $biliPlayerWrap.hidden = true;
-    setBiliStatus('');
-    biliPlayingKey = '';
-    markBiliPlaying();
-  }
-
-  function markBiliPlaying() {
-    var cards = document.querySelectorAll('#tab-bili .bili-card');
-    for (var i = 0; i < cards.length; i++) {
-      cards[i].classList.toggle('playing', !!biliPlayingKey && cards[i]._key === biliPlayingKey);
-    }
-  }
-
-  function searchBili(keyword, mode) {
-    keyword = keyword.trim();
-    if (!keyword) return;
-    biliKeyword = keyword;
-    if (mode) setBiliMode(mode);
-    var url = 'https://search.bilibili.com/' + (biliMode === 'video' ? 'video' : 'all') +
-      '?keyword=' + encodeURIComponent(keyword) + (biliMode === 'video' ? '&order=pubdate' : '');
-    var iframe = document.createElement('iframe');
-    iframe.className = 'sf-browser-iframe';
-    iframe.src = url;
-    $biliBrowserFrame.innerHTML = '';
-    $biliBrowserFrame.appendChild(iframe);
-    $biliBrowserTitle.textContent = (biliMode === 'video' ? '搜视频：' : '搜 UP主：') + keyword;
-    $biliBrowserOpen.href = url;
-    $biliBrowserHint.textContent = '无需登录。在这里点开的视频会在 bilibili.com 新标签页播放；' +
-      '想在本页播放，复制视频链接后在本页粘贴 (Ctrl+V) 即可。';
-    var saved = readBiliStore('creators').some(function (c) { return c.name === keyword; });
-    $biliBrowserSave.hidden = false;
-    $biliBrowserSave.innerHTML = saved ? '&#9733;' : '&#9734;';
-    $biliBrowserSave.title = saved ? '取消收藏这个 UP主' : '收藏这个 UP主';
-    $biliBrowserWrap.hidden = false;
-  }
-
-  function closeBiliBrowser() {
-    $biliBrowserFrame.innerHTML = '';
-    $biliBrowserWrap.hidden = true;
-  }
-
-  function setBiliMode(mode) {
-    biliMode = mode === 'video' ? 'video' : 'upuser';
-    var chips = $biliModes.querySelectorAll('[data-mode]');
-    for (var i = 0; i < chips.length; i++) {
-      chips[i].classList.toggle('active', chips[i].getAttribute('data-mode') === biliMode);
-    }
-  }
-
-  // Input box: a playable link / BV / av plays here; plain words search.
-  function submitBili(text) {
-    var v;
-    try { v = biliSource(text); } catch (e) { setBiliStatus(e.message, true); return; }
-    if (v) { playBili(v, ''); return; }
-    setBiliStatus('');
-    searchBili(text);
-  }
-
-  function toggleSaveCreator() {
-    if (!biliKeyword) return;
-    var list = readBiliStore('creators');
-    var has = list.some(function (c) { return c.name === biliKeyword; });
-    list = has ? list.filter(function (c) { return c.name !== biliKeyword; })
-               : [{ name: biliKeyword }].concat(list);
-    writeBiliStore('creators', list.slice(0, 40));
-    $biliBrowserSave.innerHTML = has ? '&#9734;' : '&#9733;';
-    $biliBrowserSave.title = has ? '收藏这个 UP主' : '取消收藏这个 UP主';
-    renderBiliSaved();
-  }
-
-  function makeBiliChip(label, onClick, onRemove) {
+  function makeVwChip(label, active) {
     var chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'bili-chip';
-    chip.innerHTML = '<span>' + escapeHtml(label) + '</span>' + (onRemove ? '<span class="x" title="移除">&times;</span>' : '');
-    chip.addEventListener('click', function (e) {
-      if (onRemove && e.target.classList.contains('x')) onRemove();
-      else onClick();
-    });
+    chip.className = 'category-chip' + (active ? ' active' : '');
+    chip.textContent = label;
     return chip;
   }
 
-  function renderBiliSaved() {
-    var list = readBiliStore('creators');
-    $biliSaved.innerHTML = '';
-    if (!list.length) return;
-    $biliSaved.innerHTML =
-      '<div class="sec-head"><span class="icn">&#11088;</span><span class="main-title">收藏的 UP主</span>' +
-      '<span class="tail"><b>' + list.length + '</b> 位</span></div>';
-    var row = document.createElement('div');
-    row.className = 'bili-chips';
-    list.forEach(function (c) {
-      row.appendChild(makeBiliChip(c.name, function () { searchBili(c.name, 'upuser'); }, function () {
-        writeBiliStore('creators', readBiliStore('creators').filter(function (x) { return x.name !== c.name; }));
-        if (biliKeyword === c.name) $biliBrowserSave.innerHTML = '&#9734;';
-        renderBiliSaved();
-      }));
-    });
-    $biliSaved.appendChild(row);
+  function selectVwChip(chip) {
+    var chips = $vwFolders.children;
+    for (var i = 0; i < chips.length; i++) chips[i].classList.toggle('active', chips[i] === chip);
+    $vwResult.scrollIntoView({ block: 'start' });
   }
 
-  function makeBiliCard(v, title, sub) {
-    var card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'bili-card';
-    card._key = v.key;
-    var pal = coverColors(v.key);
-    card.style.setProperty('--cover-a', pal[0]);
-    card.style.setProperty('--cover-b', pal[1]);
-    card.innerHTML =
-      '<span class="bili-thumb">&#9654;</span>' +
-      '<span class="bili-card-info">' +
-        '<span class="bili-card-title">' + escapeHtml(title || v.key) + '</span>' +
-        '<span class="bili-card-sub">' + escapeHtml(sub || v.key) + '</span>' +
-      '</span>';
-    card.addEventListener('click', function () { playBili(v, title); });
-    return card;
+  function renderVwGallery(images) {
+    vwImages = images;
+    var frag = document.createDocumentFragment();
+    images.forEach(function (e, i) {
+      var slot = document.createElement('div');
+      slot.className = 'vw-slot';
+      var img = document.createElement('img');
+      img.alt = e.name;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.addEventListener('load', function () { img.classList.add('ready'); });
+      img.addEventListener('error', function () { img.classList.add('ready'); });
+      img.src = vwUrl(e);
+      slot.appendChild(img);
+      var cap = document.createElement('span');
+      cap.className = 'vw-slot-name';
+      cap.textContent = (i + 1) + ' / ' + images.length + ' · ' + e.path;
+      slot.appendChild(cap);
+      slot.addEventListener('click', function () { openVwLightbox(i); });
+      frag.appendChild(slot);
+    });
+    $vwGallery.innerHTML = '';
+    $vwGallery.appendChild(frag);
   }
 
-  function renderBiliHistory() {
-    var hist = readBiliStore('history');
-    $biliHistory.innerHTML = '';
-    if (!hist.length) return;
-    $biliHistory.innerHTML =
-      '<div class="sec-head"><span class="icn">&#128338;</span><span class="main-title">最近播放</span>' +
-      '<span class="tail"><button type="button" class="bili-chip" id="bili-history-clear">清空</button></span></div>';
-    var grid = document.createElement('div');
-    grid.className = 'bili-grid';
-    hist.forEach(function (h) {
-      // Entries saved before the multi-platform player only kept the B站 id.
-      var v = h.src ? h : tryBiliSource(h.key);
-      if (v) grid.appendChild(makeBiliCard(v, h.title, v.platform === 'Bilibili' ? v.key : v.platform));
-    });
-    $biliHistory.appendChild(grid);
-    document.getElementById('bili-history-clear').addEventListener('click', function () {
-      writeBiliStore('history', []);
-      renderBiliHistory();
-    });
-    markBiliPlaying();
-  }
-
-  // bili.txt: "# UP主名" lines start a group; other lines are
-  // "video link or BV id,title".
-  function parseBiliList(text) {
-    var groups = [{ name: '', items: [] }];
-    (text || '').split('\n').forEach(function (raw) {
-      var line = raw.trim();
-      if (!line) return;
-      if (line.charAt(0) === '#') {
-        groups.push({ name: line.replace(/^#+\s*/, ''), items: [] });
-        return;
-      }
-      var commaIdx = line.search(/[,，]/);
-      var ref = commaIdx > 0 ? line.slice(0, commaIdx).trim() : line;
-      var title = commaIdx > 0 ? line.slice(commaIdx + 1).trim() : '';
-      var v = tryBiliSource(ref);
-      if (v) groups[groups.length - 1].items.push({ v: v, title: title });
-    });
-    return groups;
-  }
-
-  function renderBiliList(text) {
-    var groups = parseBiliList(text);
-    var total = groups.reduce(function (n, g) { return n + g.items.length; }, 0);
-    $navBiliCount.textContent = total;
-    $biliList.innerHTML = '';
-    if (!total) {
-      $biliList.innerHTML =
-        '<div class="links-empty">在上方粘贴视频链接，视频就在这里播放（输入名字则搜索 B站 UP主）。<br>' +
-        '想固定一份片单：在仓库根目录建立 <code>bili.txt</code>，每行一个视频：' +
-        '<br><br><code># UP主名</code><br><code>BV1xx411c7mD,视频标题</code></div>';
-      return;
-    }
-    groups.forEach(function (g) {
-      if (!g.items.length) return;
+  function renderVwFiles(files) {
+    var frag = document.createDocumentFragment();
+    if (files.length) {
       var head = document.createElement('div');
       head.className = 'sec-head';
-      head.innerHTML =
-        '<span class="icn">&#128250;</span><span class="main-title">' + escapeHtml(g.name || '片单') + '</span>' +
-        '<span class="tail"><b>' + g.items.length + '</b> 个视频</span>';
-      if (g.name) {
-        var find = makeBiliChip('搜索这个 UP主', function () { searchBili(g.name, 'upuser'); });
-        find.style.marginLeft = '10px';
-        head.querySelector('.tail').prepend(find);
+      head.innerHTML = '<span class="icn">&#128196;</span><span class="main-title">Files</span>' +
+        '<span class="tail"><b>' + files.length + '</b></span>';
+      frag.appendChild(head);
+    }
+    files.forEach(function (e) {
+      var row = document.createElement('div');
+      row.className = 'vw-file';
+      row.innerHTML =
+        '<div class="vw-file-row">' +
+          '<span class="vw-file-name">' + escapeHtml(e.path) + '</span>' +
+          '<span class="vw-file-size">' + vwSize(e.size) + '</span>' +
+        '</div>';
+      var actions = row.firstChild;
+      function addBtn(label, fn, primary) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'vw-btn' + (primary ? ' primary' : '');
+        b.textContent = label;
+        b.addEventListener('click', fn);
+        actions.appendChild(b);
+        return b;
       }
-      $biliList.appendChild(head);
-      var grid = document.createElement('div');
-      grid.className = 'bili-grid';
-      g.items.forEach(function (it) { grid.appendChild(makeBiliCard(it.v, it.title, g.name || it.v.key)); });
-      $biliList.appendChild(grid);
+      if (/\.(txt|epub)$/i.test(e.name)) {
+        addBtn('Read', function () { loadLocalFile(new File([e.blob], e.name)); }, true);
+      }
+      if (VW_ARCHIVE_RE.test(e.name)) {
+        addBtn('Open', function () { openVwArchive({ file: new File([e.blob], e.name), password: '' }); }, true);
+      }
+      if (VW_TEXT_RE.test(e.name) || VW_MEDIA_RE.test(e.name)) {
+        addBtn('View', function () { toggleVwPreview(row, e); });
+      }
+      var save = document.createElement('a');
+      save.className = 'vw-btn';
+      save.textContent = 'Save';
+      save.download = e.name;
+      save.addEventListener('click', function () { save.href = vwUrl(e); });
+      actions.appendChild(save);
+      frag.appendChild(row);
     });
-    markBiliPlaying();
+    $vwFiles.innerHTML = '';
+    $vwFiles.appendChild(frag);
   }
 
-  async function loadBili() {
-    renderBiliSaved();
-    renderBiliHistory();
-    await loadListTab('bili.txt', renderBiliList);
+  function toggleVwPreview(row, e) {
+    var open = row.querySelector('.vw-preview, .vw-preview-media');
+    if (open) { if (open.pause) open.pause(); open.remove(); return; }
+    if (VW_MEDIA_RE.test(e.name)) {
+      var media = document.createElement(/\.(mp3|m4a|ogg|oga|wav|flac|aac|opus)$/i.test(e.name) ? 'audio' : 'video');
+      media.className = 'vw-preview-media';
+      media.controls = true;
+      media.src = vwUrl(e);
+      row.appendChild(media);
+      return;
+    }
+    var pre = document.createElement('div');
+    pre.className = 'vw-preview';
+    pre.textContent = 'Loading…';
+    row.appendChild(pre);
+    var limit = 2 * 1048576;
+    e.blob.slice(0, limit).arrayBuffer().then(function (buf) {
+      var bytes = new Uint8Array(buf), text;
+      try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+      catch (err) { try { text = new TextDecoder('gb18030').decode(bytes); } catch (err2) { text = new TextDecoder().decode(bytes); } }
+      pre.textContent = text + (e.size > limit ? '\n\n… (first 2 MB shown — use Save for the whole file)' : '');
+    });
   }
 
-  $biliForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    submitBili($biliInput.value);
-    $biliInput.blur();
-  });
-  $biliInput.addEventListener('input', function () {
-    $biliClear.classList.toggle('visible', !!$biliInput.value);
-  });
-  $biliClear.addEventListener('click', function () {
-    $biliInput.value = '';
-    $biliClear.classList.remove('visible');
-    $biliInput.focus();
-  });
-  $biliModes.addEventListener('click', function (e) {
-    var chip = e.target.closest('[data-mode]');
-    if (!chip) return;
-    setBiliMode(chip.getAttribute('data-mode'));
-    if (biliKeyword && !$biliBrowserWrap.hidden) searchBili(biliKeyword);
-  });
-  document.getElementById('bili-player-close').addEventListener('click', closeBiliPlayer);
-  document.getElementById('bili-browser-close').addEventListener('click', closeBiliBrowser);
-  $biliBrowserSave.addEventListener('click', toggleSaveCreator);
+  // ---- Full-screen picture view: ←/→ or swipe to move, Esc to close ----
+  var vwLb = null, vwLbIndex = 0;
 
-  // Paste a video link anywhere on the tab (outside the box) to play it.
-  document.addEventListener('paste', function (e) {
-    if (!tabPanels.bili.classList.contains('active') || e.target === $biliInput) return;
-    var text = (e.clipboardData || window.clipboardData).getData('text');
-    var v = tryBiliSource(text);
-    if (!v) return;
+  function ensureVwLightbox() {
+    if (vwLb) return vwLb;
+    vwLb = document.createElement('div');
+    vwLb.className = 'vw-lightbox';
+    vwLb.hidden = true;
+    vwLb.innerHTML =
+      '<img alt="">' +
+      '<button type="button" class="vw-lb-btn vw-lb-prev" title="Previous (←)">&#8249;</button>' +
+      '<button type="button" class="vw-lb-btn vw-lb-next" title="Next (→)">&#8250;</button>' +
+      '<button type="button" class="vw-lb-btn vw-lb-close" title="Close (Esc)">&times;</button>' +
+      '<span class="vw-lb-count"></span>';
+    document.body.appendChild(vwLb);
+    vwLb.querySelector('.vw-lb-prev').addEventListener('click', function (e) { e.stopPropagation(); stepVwLightbox(-1); });
+    vwLb.querySelector('.vw-lb-next').addEventListener('click', function (e) { e.stopPropagation(); stepVwLightbox(1); });
+    vwLb.querySelector('.vw-lb-close').addEventListener('click', closeVwLightbox);
+    vwLb.addEventListener('click', function (e) { if (e.target === vwLb) closeVwLightbox(); });
+    var x0 = null;
+    vwLb.addEventListener('touchstart', function (e) { if (e.touches.length === 1) x0 = e.touches[0].clientX; }, { passive: true });
+    vwLb.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      x0 = null;
+      if (Math.abs(dx) > 50) stepVwLightbox(dx < 0 ? 1 : -1);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!vwLb || vwLb.hidden) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); stepVwLightbox(1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); stepVwLightbox(-1); }
+      else if (e.key === 'Escape') closeVwLightbox();
+    });
+    return vwLb;
+  }
+
+  function openVwLightbox(i) {
+    if (!vwImages.length) return;
+    ensureVwLightbox().hidden = false;
+    showVwLightbox(i);
+  }
+
+  function showVwLightbox(i) {
+    vwLbIndex = (i + vwImages.length) % vwImages.length;
+    var e = vwImages[vwLbIndex];
+    vwLb.querySelector('img').src = vwUrl(e);
+    vwLb.querySelector('.vw-lb-count').textContent = (vwLbIndex + 1) + ' / ' + vwImages.length + ' · ' + e.name;
+    // Warm the next picture so stepping forward is instant.
+    var next = vwImages[(vwLbIndex + 1) % vwImages.length];
+    if (next) { var pre = new Image(); pre.decoding = 'async'; pre.src = vwUrl(next); }
+  }
+
+  function stepVwLightbox(d) { showVwLightbox(vwLbIndex + d); }
+
+  function closeVwLightbox() {
+    if (!vwLb || vwLb.hidden) return;
+    vwLb.hidden = true;
+    // Keep the strip in step with where the full-screen view left off.
+    var slot = $vwGallery.children[vwLbIndex];
+    if (slot) slot.scrollIntoView({ block: 'start' });
+  }
+
+  $vwDrop.addEventListener('click', function () { $vwInput.click(); });
+  $vwInput.addEventListener('change', function () {
+    handleVwFiles(this.files);
+    this.value = '';
+  });
+  $vwDrop.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('drag-over'); });
+  $vwDrop.addEventListener('dragleave', function () { this.classList.remove('drag-over'); });
+  $vwDrop.addEventListener('drop', function (e) {
     e.preventDefault();
-    playBili(v, '');
+    this.classList.remove('drag-over');
+    handleVwFiles(e.dataTransfer.files);
+  });
+  $vwPass.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!vwArchive || !$vwPassInput.value) return;
+    openVwArchive({ file: vwArchive.file, password: $vwPassInput.value, zip: vwArchive.zip });
+  });
+  // Names are re-decoded from the saved raw bytes: no unpacking again.
+  $vwGbk.addEventListener('click', function () {
+    if (!vwArchive || !vwArchive.zip || !vwArchive.files) return;
+    vwArchive.zip.enc = (vwArchive.zip.enc + 1) % VW_NAME_ENCODINGS.length;
+    showVwArchive(vwArchive);
+  });
+  document.getElementById('vw-close').addEventListener('click', function () {
+    if (vwWorker) { vwWorker.terminate(); vwWorker = null; }
+    vwJobId++;
+    vwArchive = null;
+    clearVw();
+    setVwStatus('');
   });
 
   // ============ Reading settings (typeface, line height) ============
